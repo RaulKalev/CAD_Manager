@@ -56,7 +56,38 @@ namespace CAD_Manager.ViewModels
 
         public void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            _layerVisibilityManager.SaveLayerVisibility(_uiDoc.Document.ActiveView.Name, _visibilityToggler.DWGNodes);
+            // Refresh override data from the current view before saving
+            Document doc = _uiDoc.Document;
+            View currentView = doc.ActiveView;
+            
+            // Use DWGDataService to collect fresh data with current overrides
+            var dataService = new DWGDataService();
+            List<DWGNode> currentNodes = dataService.CollectDWGNodes(doc, currentView);
+            
+            // Merge visibility states from UI with fresh override data
+            foreach (var currentNode in currentNodes)
+            {
+                var existingNode = _visibilityToggler.DWGNodes.FirstOrDefault(n => n.Name == currentNode.Name);
+                if (existingNode != null)
+                {
+                    // Preserve the visibility states from the UI
+                    currentNode.IsChecked = existingNode.IsChecked;
+                    currentNode.IsHalftone = existingNode.IsHalftone;
+                    
+                    // Merge layer visibility states
+                    foreach (var currentLayer in currentNode.Layers)
+                    {
+                        var existingLayer = existingNode.Layers.FirstOrDefault(l => l.Name == currentLayer.Name);
+                        if (existingLayer != null)
+                        {
+                            currentLayer.IsChecked = existingLayer.IsChecked;
+                        }
+                    }
+                }
+            }
+            
+            // Save with fresh override data
+            _layerVisibilityManager.SaveLayerVisibility(currentView.Name, currentNodes);
         }
 
         public void BrowseButton_Click(object sender, RoutedEventArgs e)

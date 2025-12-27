@@ -81,3 +81,4 @@ C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\Themes\ScrollBarStyle.baml
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.csproj.Fody.CopyLocal.cache
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.csproj.Fody.RuntimeCopyLocal.cache
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.sourcelink.json
