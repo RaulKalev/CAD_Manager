@@ -1,4 +1,5 @@
 using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -29,6 +30,8 @@ namespace CAD_Manager
         private readonly ExternalEvent _externalEvent;
         private readonly HalftoneHandler _halftoneHandler;
         private readonly ExternalEvent _halftoneEvent;
+        private readonly ApplyToViewsHandler _applyToViewsHandler;
+        private readonly ExternalEvent _applyToViewsEvent;
         private readonly CommandButtons _commandButtons;
         private readonly TreeViewControls _treeViewControls;
         private readonly WindowResizer _windowResizer;
@@ -65,13 +68,19 @@ namespace CAD_Manager
             };
             _halftoneEvent = ExternalEvent.Create(_halftoneHandler);
 
+            _applyToViewsHandler = new ApplyToViewsHandler
+            {
+                Document = _uiDoc.Document
+            };
+            _applyToViewsEvent = ExternalEvent.Create(_applyToViewsHandler);
+
             _themeManager = new ThemeManager(this);
 
             _treeViewControls.SortDWGs(DWGNodes);
 
             FilteredDWGNodes = DWGNodes;
 
-            _commandButtons = new CommandButtons(_uiDoc, _externalEvent, _visibilityToggler, RefreshTreeView);
+            _commandButtons = new CommandButtons(_uiDoc, _externalEvent, _visibilityToggler, RefreshTreeView, this);
 
             DWGTreeView.ItemsSource = FilteredDWGNodes;
             DWGTreeView.PreviewMouseLeftButtonDown += TreeView_PreviewMouseLeftButtonDown;
@@ -107,6 +116,13 @@ namespace CAD_Manager
 
             this.Focusable = true;
             this.Focus();
+            
+            // Disable ApplyToViewsButton in Family Editor
+            if (_uiDoc.Document.IsFamilyDocument)
+            {
+                ApplyToViewsButton.IsEnabled = false;
+            }
+            
             if (this.WindowStartupLocation != WindowStartupLocation.Manual)
                 this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 
@@ -268,7 +284,32 @@ namespace CAD_Manager
         private void LoadButton_Click(object sender, RoutedEventArgs e) => _commandButtons.LoadButton_Click(sender, e);
         private void SaveButton_Click(object sender, RoutedEventArgs e) => _commandButtons.SaveButton_Click(sender, e);
         private void BrowseButton_Click(object sender, RoutedEventArgs e) => _commandButtons.BrowseButton_Click(sender, e);
+
         private void RefreshButton_Click(object sender, RoutedEventArgs e) => _commandButtons.RefreshButton_Click(sender, e);
+
+        private void ApplyToViewsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var applyWindow = new UI.ApplyToViewsWindow(_uiDoc.Document, _uiDoc.Document.ActiveView);
+            applyWindow.Owner = this;
+            
+            if (applyWindow.ShowDialog() == true && applyWindow.SelectedViews != null && applyWindow.SelectedViews.Count > 0)
+            {
+                // Set up the handler with the selected views
+                _applyToViewsHandler.SourceView = _uiDoc.Document.ActiveView;
+                _applyToViewsHandler.TargetViews = applyWindow.SelectedViews;
+                _applyToViewsHandler.OnComplete = (message) =>
+                {
+                    UniversalPopupWindow.Show(message, "Apply to Views", MessageBoxButton.OK, MessageBoxImage.Information, this);
+                };
+                _applyToViewsHandler.OnError = (message) =>
+                {
+                    UniversalPopupWindow.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Error, this);
+                };
+                
+                // Raise the external event
+                _applyToViewsEvent.Raise();
+            }
+        }
 
         private void TreeViewItem_EditButton_Click(object sender, RoutedEventArgs e)
         {
@@ -367,7 +408,7 @@ namespace CAD_Manager
                         }
                         else
                         {
-                            System.Windows.MessageBox.Show("Layer override failed: Could not resolve parent DWG context.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            UniversalPopupWindow.Show("Layer override failed: Could not resolve parent DWG context.", "Error", MessageBoxButton.OK, MessageBoxImage.Error, this);
                         }
                     }
             }

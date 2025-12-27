@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Reflection;
+using CAD_Manager.UI;
 
 namespace CAD_Manager.Services
 {
@@ -61,7 +62,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load theme: {ex.Message}\nTheme URI: {themeUri}", "Theme Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UniversalPopupWindow.Show($"Failed to load theme: {ex.Message}\nTheme URI: {themeUri}", "Theme Load Error", MessageBoxButton.OK, MessageBoxImage.Error, _window);
             }
         }
 
@@ -90,8 +91,8 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save window state: {ex.Message}", "Save Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                UniversalPopupWindow.Show($"Failed to save window state: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error, _window);
             }
         }
 
@@ -151,8 +152,8 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load window state: {ex.Message}", "Load Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                UniversalPopupWindow.Show($"Failed to load window state: {ex.Message}", "Load Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error, _window);
             }
         }
 

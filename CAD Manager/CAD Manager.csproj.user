@@ -6,29 +6,13 @@
   <PropertyGroup>
     <ActiveDebugProfile>Revit24</ActiveDebugProfile>
   </PropertyGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Compile Update="LineGraphicsWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Window1.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="CustomTitleBar.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="LineGraphicsWindow.xaml">
-      <SubType>Designer</SubType>
-    </Page>
     <Resource Update="Themes\LightTheme.xaml">
       <SubType>Designer</SubType>
     </Resource>
     <Resource Update="Themes\DarkTheme.xaml">
       <SubType>Designer</SubType>
     </Resource>
-    <Page Update="Window1.xaml">
-      <SubType>Designer</SubType>
-    </Page>
   </ItemGroup>
 </Project>

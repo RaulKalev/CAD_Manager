@@ -307,6 +307,51 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
+                    <!--  Apply to Views Button  -->
+                    <Button
+                        x:Name="ApplyToViewsButton"
+                        Width="23"
+                        Height="23"
+                        Margin="8,0,0,0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="ApplyToViewsButton_Click"
+                        RenderTransformOrigin="0.5,0.5"
+                        ToolTip="Apply current view settings to other views">
+                        <Button.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform ScaleX="1.3" ScaleY="1.3" />
+                                <SkewTransform />
+                                <RotateTransform />
+                                <TranslateTransform X="19" />
+                            </TransformGroup>
+                        </Button.RenderTransform>
+                        <Button.Template>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Grid Background="Transparent">
+                                    <materialDesign:PackIcon
+                                        x:Name="ApplyIcon"
+                                        Width="18"
+                                        Height="18"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource IconForegroundBrush}"
+                                        Kind="ApplicationExport" />
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ApplyIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="ApplyIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter TargetName="ApplyIcon" Property="Foreground" Value="#666666" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                     <!--  Refresh Button  -->
                     <Button
                         x:Name="RefreshButton"

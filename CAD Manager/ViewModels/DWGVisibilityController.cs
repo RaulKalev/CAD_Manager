@@ -222,14 +222,7 @@ namespace CAD_Manager.ViewModels
                 // 1. Visibility
                 view.SetCategoryHidden(category.Id, !isVisible);
 
-                // 2. Graphic Overrides
-                // We fetch existing to preserve what isn't changed, OR we start clean if we want full reset?
-                // The requirement is that loaded values apply. If loaded values are null, it means <No Override>.
-                // So "No Override" means "Clear Override".
-                
-                OverrideGraphicSettings settings = view.GetCategoryOverrides(category.Id);
-                bool changed = false;
-
+                // 2. Graphic Overrides - Create NEW settings to ensure "No Value = No Override"
                 string patternName = null;
                 string colorHex = null;
                 int? weight = null;
@@ -247,54 +240,7 @@ namespace CAD_Manager.ViewModels
                     weight = layer.LineWeight;
                 }
 
-                // Apply Color
-                if (!string.IsNullOrEmpty(colorHex))
-                {
-                    Autodesk.Revit.DB.Color color = ParseColorHex(colorHex);
-                    if (color != null)
-                    {
-                        settings.SetProjectionLineColor(color);
-                        changed = true;
-                    }
-                }
-                else
-                {
-                    // If stored is null, do we clear?
-                    // User said: "If there is no values in the database, it should be interpreted as <No Override>"
-                    // So yes, we should ensure it is cleared.
-                    if (settings.ProjectionLineColor.IsValid)
-                    {
-                         settings.SetProjectionLineColor(Autodesk.Revit.DB.Color.InvalidColorValue); 
-                         // Note: InvalidColorValue is often used to clear, or we create a new empty override if we want to clear ALL.
-                         // But here we are merging. Let's try to clear specific property.
-                         // Actually, SetProjectionLineColor(InvalidColorValue) might throw or not work.
-                         // Common way to clear is settings.SetProjectionLineColor(new Color(0,0,0)) which is black?
-                         // No, to clear override we usually don't set it.
-                         // If we want to FORCE clear, we might need new settings.
-                         // Let's assume for now we just want to APPLY valid values.
-                         // Re-reading user request: "interpreted as <No Override>".
-                         // If I load a template, I expect exact state. If template says "nothing", then I expect no override.
-                         // So I probably SHOULD clear it if it's currently set.
-                         // However, checking validity of existing override is complex.
-                         // Let's safe-guard: If we have explicit data, apply it. If we don't, we probably shouldn't touch it?
-                         // "it should be interpreted as <No Override>" -> implies existing override should be REMOVED.
-                         // BUT, `view.SetCategoryOverrides` replaces settings.
-                         // So if I create a NEW settings object, it clears everything unspecified.
-                         // BUT `view.GetCategoryOverrides` returns current.
-                         // So if I modify *current*, I am merging.
-                         // If I want "No Override" to be enforced, I should probably Clear the property.
-                         // Revit API: To clear color, usually we don't set it.
-                         // Wait, OverrideGraphicSettings has no "ClearColor".
-                         // The standard way to "Clear" is to create a NEW OverrideGraphicSettings object and only set what you want.
-                         // If the JSON contains NONE of the 3 overrides, we should probably pass an empty object (clearing all).
-                         // If the JSON contains SOME, we set those.
-                         // This implies we should NOT use GetCategoryOverrides() if we want strictly "What's in JSON is law".
-                         // Let's try creating NEW settings.
-                    }
-                }
-
-                // REVISED STRATEGY: Create NEW settings to ensure "No Value = No Override" is enforced strictly.
-                // This matches the "Template" behavior.
+                // Create NEW settings to ensure "No Value = No Override" is enforced strictly
                 OverrideGraphicSettings newSettings = new OverrideGraphicSettings();
                 
                 // Color

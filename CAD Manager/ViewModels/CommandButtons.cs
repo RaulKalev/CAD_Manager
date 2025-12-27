@@ -23,12 +23,15 @@ namespace CAD_Manager.ViewModels
         private readonly Action _refreshTreeView;
         // Add new fields for the query event
 
-        public CommandButtons(UIDocument uiDoc, ExternalEvent externalEvent, VisibilityToggler visibilityToggler, Action refreshTreeView)
+        private readonly Window _owner;
+
+        public CommandButtons(UIDocument uiDoc, ExternalEvent externalEvent, VisibilityToggler visibilityToggler, Action refreshTreeView, Window owner)
         {
             _uiDoc = uiDoc;
             _externalEvent = externalEvent;
             _visibilityToggler = visibilityToggler;
-            _layerVisibilityManager = new LayerVisibilityManager(_uiDoc.Document, _externalEvent, _visibilityToggler);
+            _owner = owner;
+            _layerVisibilityManager = new LayerVisibilityManager(_uiDoc.Document, _externalEvent, _visibilityToggler, _owner);
             _refreshTreeView = refreshTreeView;
         }
         public void LoadButton_Click(object sender, RoutedEventArgs e)
@@ -36,7 +39,7 @@ namespace CAD_Manager.ViewModels
             string saveFolder = _layerVisibilityManager.GetProjectSaveFolder();
             if (string.IsNullOrEmpty(saveFolder))
             {
-                MessageBox.Show("Save folder not found. Save a template to create a save folder in your project directory.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UniversalPopupWindow.Show("Save folder not found. Save a template to create a save folder in your project directory.", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
                 return;
             }
 
@@ -45,7 +48,7 @@ namespace CAD_Manager.ViewModels
 
             if (string.IsNullOrEmpty(matchingTemplateFolder))
             {
-                MessageBox.Show("No matching template found.", "No Match", MessageBoxButton.OK, MessageBoxImage.Information);
+                UniversalPopupWindow.Show("No matching template found.", "No Match", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
                 return;
             }
 
@@ -133,17 +136,18 @@ namespace CAD_Manager.ViewModels
                     }
                     else
                     {
-                        MessageBox.Show(
+                        UniversalPopupWindow.Show(
                             "The selected file does not match the current layers. Please select a matching JSON file.",
                             "Invalid File",
                             MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+                            MessageBoxImage.Error,
+                            _owner);
                     }
                 }
                 else
                 {
                     // User canceled the browse window
-                    MessageBox.Show("No file loaded.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    UniversalPopupWindow.Show("No file loaded.", "Info", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
                     break;
                 }
             }

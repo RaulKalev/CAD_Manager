@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
+using CAD_Manager.UI;
+
 namespace CAD_Manager.Services
 {
     public class LayerVisibilityManager
@@ -18,11 +20,14 @@ namespace CAD_Manager.Services
         private readonly ExternalEvent _externalEvent;
         private readonly VisibilityToggler _visibilityToggler;
 
-        public LayerVisibilityManager(Document document, ExternalEvent externalEvent, VisibilityToggler visibilityToggler)
+        private readonly Window _owner;
+
+        public LayerVisibilityManager(Document document, ExternalEvent externalEvent, VisibilityToggler visibilityToggler, Window owner)
         {
             _document = document;
             _externalEvent = externalEvent;
             _visibilityToggler = visibilityToggler;
+            _owner = owner;
         }
 
         private class LayerVisibilityData
@@ -75,7 +80,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error accessing save folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UniversalPopupWindow.Show($"Error accessing save folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
                 return null;
             }
         }
@@ -156,11 +161,11 @@ namespace CAD_Manager.Services
                     File.WriteAllText(filePath, json, Encoding.UTF8);
                 }
 
-                MessageBox.Show($"Layer visibility saved to folder:\n{saveFolder}", "Success", MessageBoxButton.OK);
+                UniversalPopupWindow.Show($"Layer visibility saved to folder:\n{saveFolder}", "Success", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error saving layer visibility: {ex.Message}", "Error", MessageBoxButton.OK);
+                UniversalPopupWindow.Show($"Error saving layer visibility: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
             }
         }
         public void LoadLayerVisibility(string folderPath, List<DWGNode> dwgNodes)
@@ -169,11 +174,9 @@ namespace CAD_Manager.Services
             {
                 if (!Directory.Exists(folderPath))
                 {
-                    MessageBox.Show($"No saved Data found at: {folderPath}", "Info", MessageBoxButton.OK);
+                    UniversalPopupWindow.Show($"No saved Data found at: {folderPath}", "Info", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
                     return;
                 }
-
-                bool hasAnyOverrides = false;
 
                 foreach (var dwgNode in dwgNodes)
                 {
@@ -192,8 +195,6 @@ namespace CAD_Manager.Services
                         dwgNode.LinePattern = savedData.LinePattern;
                         dwgNode.LineColor = savedData.LineColor;
                         dwgNode.LineWeight = savedData.LineWeight;
-                        if (dwgNode.LinePattern != null || dwgNode.LineColor != null || dwgNode.LineWeight != null) 
-                            hasAnyOverrides = true;
 
                         if (savedData.Layers != null)
                         {
@@ -223,9 +224,6 @@ namespace CAD_Manager.Services
                                                 layerNode.LinePattern = layerData.LinePattern;
                                                 layerNode.LineColor = layerData.LineColor;
                                                 layerNode.LineWeight = layerData.LineWeight;
-                                                
-                                                if (layerData.LinePattern != null || layerData.LineColor != null || layerData.LineWeight != null)
-                                                    hasAnyOverrides = true;
                                             }
                                         }
                                         catch
@@ -251,11 +249,11 @@ namespace CAD_Manager.Services
                 // If we loaded overrides, we might want to ensure they apply. 
                 // The VisibilityToggler executes DWGVisibilityController, which we will update to handle overrides using the properties we just populated.
 
-                MessageBox.Show("Layer visibility and overrides loaded successfully.", "Success", MessageBoxButton.OK);
+                UniversalPopupWindow.Show("Layer visibility and overrides loaded successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading layer visibility: {ex.Message}", "Error", MessageBoxButton.OK);
+                UniversalPopupWindow.Show($"Error loading layer visibility: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
             }
         }
         private string SanitizeFileName(string name)
@@ -286,7 +284,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error searching for matching template: {ex.Message}", "Error", MessageBoxButton.OK);
+                UniversalPopupWindow.Show($"Error searching for matching template: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
             }
 
             return null;
