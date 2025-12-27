@@ -531,7 +531,7 @@
                                         BorderThickness="0"
                                         Click="TreeViewItem_EditButton_Click"
                                         Tag="{Binding}"
-                                        ToolTip="Set Line Color">
+                                        ToolTip="Set Line Style">
                                         <Button.Template>
                                             <ControlTemplate TargetType="{x:Type Button}">
                                                 <Grid Background="Transparent">
