@@ -34,6 +34,12 @@ namespace CAD_Manager.Helpers
                 {
                     Name = dwg.Name,
                     IsChecked = dwg.IsChecked,
+                    ElementId = dwg.ElementId,
+                    IsHalftone = dwg.IsHalftone,
+                    LineColor = dwg.LineColor,
+                    LinePattern = dwg.LinePattern,
+                    LineWeight = dwg.LineWeight,
+                    IsSelected = dwg.IsSelected,
                     Layers = dwg.Layers
                         .Where(layer =>
                             (layer.Name ?? string.Empty).Normalize(NormalizationForm.FormKC)

@@ -17,22 +17,8 @@ namespace CAD_Manager
 
         public Result OnStartup(UIControlledApplication application)
         {
-            // Define the custom tab name
-            string tabName = "RK Tools";
-
-
-            // Try to create the custom tab (avoid exception if it already exists)
-            try
-            {
-                application.CreateRibbonTab(tabName);
-            }
-            catch
-            {
-                // Tab already exists; continue without throwing an error
-            }
-
-            // Create Ribbon Panel on the custom tab
-            ribbonPanel = application.CreateOrSelectPanel(tabName, "Tools");
+            // Create Ribbon Panel on the default Add-Ins tab
+            ribbonPanel = application.CreateRibbonPanel("Tools");
 
             // Create PushButton with embedded resource
             ribbonPanel.CreatePushButton<CADManagerCommand>()

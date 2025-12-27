@@ -117,15 +117,6 @@ namespace CAD_Manager
             this.Focusable = true;
             this.Focus();
             
-            // Disable ApplyToViewsButton in Family Editor
-            if (_uiDoc.Document.IsFamilyDocument)
-            {
-                ApplyToViewsButton.IsEnabled = false;
-            }
-            
-            if (this.WindowStartupLocation != WindowStartupLocation.Manual)
-                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                
             if (_uiDoc.Document.IsFamilyDocument)
             {
                 DisableFileButtons();
@@ -165,10 +156,14 @@ namespace CAD_Manager
             SaveButton.IsEnabled = false;
             LoadButton.IsEnabled = false;
             BrowseButton.IsEnabled = false;
+            ApplyToViewsButton.IsEnabled = false;
+            RefreshButton.IsEnabled = false;
 
             SaveButton.Opacity = 0.5;
             LoadButton.Opacity = 0.5;
             BrowseButton.Opacity = 0.5;
+            ApplyToViewsButton.Opacity = 0.5;
+            RefreshButton.Opacity = 0.5;
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -218,6 +213,11 @@ namespace CAD_Manager
             if (sender is CheckBox checkBox)
             {
                 _treeViewControls.HandleCheckBoxToggled(checkBox, DWGTreeView);
+                
+                if (checkBox.DataContext is DWGNode dwgNode)
+                {
+                    SyncFilteredNodeToOriginal(dwgNode);
+                }
             }
         }
 
@@ -251,6 +251,25 @@ namespace CAD_Manager
                 
                 _halftoneHandler.DWGNodes = nodesToUpdate;
                 _halftoneEvent.Raise();
+            }
+        }
+        
+        private void SyncFilteredNodeToOriginal(DWGNode filteredNode)
+        {
+            if (filteredNode == null || DWGNodes == null) return;
+            
+            // Find the original node by ID
+            // Assuming ElementId is a unique identifier for DWG imports
+            var original = DWGNodes.FirstOrDefault(n => n.ElementId == filteredNode.ElementId);
+            
+            if (original != null && !ReferenceEquals(original, filteredNode))
+            {
+                original.IsChecked = filteredNode.IsChecked;
+                original.IsHalftone = filteredNode.IsHalftone;
+                original.LineColor = filteredNode.LineColor;
+                original.LinePattern = filteredNode.LinePattern;
+                original.LineWeight = filteredNode.LineWeight;
+                original.IsSelected = filteredNode.IsSelected;
             }
         }
 
@@ -347,6 +366,36 @@ namespace CAD_Manager
                         _colorOverrideHandler.ClearOverrides = lineGraphicsWindow.ClearOverridesRequested;
                         _colorOverrideHandler.IsLayerOverride = false;
                         _colorOverrideEvent.Raise();
+
+                        // Sync local model to prevent reversion on subsequent visibility toggles
+                        foreach(var dwgNode in nodesToUpdate) 
+                        {
+                            if (lineGraphicsWindow.ClearOverridesRequested)
+                            {
+                                dwgNode.LineColor = null;
+                                dwgNode.LinePattern = null;
+                                dwgNode.LineWeight = null;
+                            }
+                            else
+                            {
+                                if (lineGraphicsWindow.SelectedColor != null)
+                                {
+                                    dwgNode.LineColor = $"#{lineGraphicsWindow.SelectedColor.Red:X2}{lineGraphicsWindow.SelectedColor.Green:X2}{lineGraphicsWindow.SelectedColor.Blue:X2}";
+                                }
+                                if (lineGraphicsWindow.SelectedPattern != null)
+                                {
+                                    dwgNode.LinePattern = lineGraphicsWindow.SelectedPattern;
+                                }
+                                if (lineGraphicsWindow.SelectedWeight.HasValue)
+                                {
+                                     if (lineGraphicsWindow.SelectedWeight.Value == -1) 
+                                         dwgNode.LineWeight = null;
+                                     else 
+                                         dwgNode.LineWeight = lineGraphicsWindow.SelectedWeight.Value;
+                                }
+                            }
+                            SyncFilteredNodeToOriginal(dwgNode);
+                        }
                     }
                     else if (node is LayerNode clickedLayerNode)
                     {
@@ -405,6 +454,36 @@ namespace CAD_Manager
                             _colorOverrideHandler.ClearOverrides = lineGraphicsWindow.ClearOverridesRequested;
                             _colorOverrideHandler.IsLayerOverride = true;
                             _colorOverrideEvent.Raise();
+
+                            // Sync local model to prevent reversion on subsequent visibility toggles
+                            // We need to update the ORIGINAL LayerNodes in layersToUpdate
+                            foreach (var layer in layersToUpdate)
+                            {
+                                if (lineGraphicsWindow.ClearOverridesRequested)
+                                {
+                                    layer.LineColor = null;
+                                    layer.LinePattern = null;
+                                    layer.LineWeight = null;
+                                }
+                                else
+                                {
+                                    if (lineGraphicsWindow.SelectedColor != null)
+                                    {
+                                        layer.LineColor = $"#{lineGraphicsWindow.SelectedColor.Red:X2}{lineGraphicsWindow.SelectedColor.Green:X2}{lineGraphicsWindow.SelectedColor.Blue:X2}";
+                                    }
+                                    if (lineGraphicsWindow.SelectedPattern != null)
+                                    {
+                                        layer.LinePattern = lineGraphicsWindow.SelectedPattern;
+                                    }
+                                    if (lineGraphicsWindow.SelectedWeight.HasValue)
+                                    {
+                                         if (lineGraphicsWindow.SelectedWeight.Value == -1) 
+                                             layer.LineWeight = null;
+                                         else 
+                                             layer.LineWeight = lineGraphicsWindow.SelectedWeight.Value;
+                                    }
+                                }
+                            }
                         }
                         else
                         {
@@ -687,6 +766,67 @@ namespace CAD_Manager
                 var childItem = FindTreeViewItem(treeViewItem, node);
                 if (childItem != null)
                     return childItem;
+            }
+            return null;
+        }
+
+        private void TreeViewItem_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TreeViewItem item)
+            {
+                // Attempt to find the "Expander" toggle button provided by the template
+                var expander = FindVisualChild<System.Windows.Controls.Primitives.ToggleButton>(item, "Expander");
+                if (expander != null)
+                {
+                    // Update initial state
+                    UpdateExpanderTooltip(expander);
+
+                    // Hook up events to keep it dynamic
+                    expander.Checked -= Expander_StateChanged;
+                    expander.Unchecked -= Expander_StateChanged;
+                    expander.Checked += Expander_StateChanged;
+                    expander.Unchecked += Expander_StateChanged;
+                }
+            }
+        }
+
+        private void Expander_StateChanged(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton expander)
+            {
+                UpdateExpanderTooltip(expander);
+            }
+        }
+
+        private void UpdateExpanderTooltip(System.Windows.Controls.Primitives.ToggleButton expander)
+        {
+            expander.ToolTip = expander.IsChecked == true ? "Collapse" : "Expand";
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent, string childName = null) where T : DependencyObject
+        {
+            if (parent == null) return null;
+
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                // If a name is specified, ensure it matches
+                if (!string.IsNullOrEmpty(childName))
+                {
+                    if (child is FrameworkElement frameworkElement && frameworkElement.Name == childName)
+                    {
+                        if (child is T typedChild) return typedChild;
+                    }
+                }
+                else if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+
+                var foundChild = FindVisualChild<T>(child, childName);
+                if (foundChild != null) return foundChild;
             }
             return null;
         }

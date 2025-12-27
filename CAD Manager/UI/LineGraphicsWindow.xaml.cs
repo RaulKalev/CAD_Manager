@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using CAD_Manager.Helpers;
 
 namespace CAD_Manager.UI
 {
@@ -283,7 +284,7 @@ namespace CAD_Manager.UI
             {
                 if ((firstPatternId == null && effectivePatternId != null) ||
                     (firstPatternId != null && effectivePatternId == null) ||
-                    (firstPatternId != null && effectivePatternId != null && firstPatternId.Value != effectivePatternId.Value))
+                    (firstPatternId != null && effectivePatternId != null && firstPatternId.GetIdValue() != effectivePatternId.GetIdValue()))
                 {
                     patternVaries = true;
                 }

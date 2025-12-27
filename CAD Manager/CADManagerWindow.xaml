@@ -345,9 +345,6 @@
                                     <Trigger Property="IsPressed" Value="True">
                                         <Setter TargetName="ApplyIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
                                     </Trigger>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter TargetName="ApplyIcon" Property="Foreground" Value="#666666" />
-                                    </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Button.Template>
@@ -422,6 +419,7 @@
                             <!--  Style for Multi-Row Selection Highlighting  -->
                             <Style TargetType="TreeViewItem">
                                 <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                <EventSetter Event="Loaded" Handler="TreeViewItem_Loaded" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                         <Setter Property="Background" Value="{DynamicResource TextHighlightBrush}" />
@@ -493,8 +491,17 @@
                                         BorderThickness="0"
                                         Checked="Halftone_Toggled"
                                         IsChecked="{Binding IsHalftone}"
-                                        ToolTip="Toggle Halftone"
                                         Unchecked="Halftone_Toggled">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton">
+                                            <Setter Property="ToolTip" Value="Apply halftone" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter Property="ToolTip" Value="Remove halftone" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
                                         <ToggleButton.Template>
                                             <ControlTemplate TargetType="{x:Type ToggleButton}">
                                                 <Grid Background="Transparent">
@@ -589,7 +596,7 @@
                                         BorderThickness="0"
                                         Click="TreeViewItem_EditButton_Click"
                                         Tag="{Binding}"
-                                        ToolTip="Set Line Color">
+                                        ToolTip="Set Line Style">
                                         <Button.Template>
                                             <ControlTemplate TargetType="{x:Type Button}">
                                                 <Grid Background="Transparent">
