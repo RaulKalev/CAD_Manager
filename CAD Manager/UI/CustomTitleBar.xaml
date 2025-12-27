@@ -1,0 +1,103 @@
+﻿<UserControl
+    x:Class="CAD_Manager.UI.CustomTitleBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    Height="30"
+    Background="Transparent">
+    <Border
+        Background="{DynamicResource PrimaryBackgroundBrush}"
+        BorderBrush="Gray"
+        BorderThickness="0"
+        ClipToBounds="True"
+        CornerRadius="9,9,0,0"
+        SnapsToDevicePixels="True">
+        <DockPanel
+            VerticalAlignment="Center"
+            Background="Transparent"
+            MouseDown="TitleBar_MouseDown">
+            <!--  Title Text  -->
+            <TextBlock
+                Margin="10,0"
+                VerticalAlignment="Center"
+                DockPanel.Dock="Left"
+                FontSize="14"
+                FontWeight="Bold"
+                Foreground="{DynamicResource ForegroundBrush}"
+                Text="CAD Manager"
+                />
+
+            <!--  Close Button  -->
+            <Button
+                Width="35"
+                Height="19"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Click="CloseButton_Click"
+                DockPanel.Dock="Right"
+                ToolTip="Close">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <!--  Ensures entire button area is clickable  -->
+                            <materialDesign:PackIcon
+                                x:Name="CloseIcon"
+                                Width="20"
+                                Height="20"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource IconBrush}"
+                                Kind="CloseCircleOutline" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!--  Hover Effect  -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CloseIcon" Property="Foreground" Value="#DC6B6B" />
+                            </Trigger>
+                            <!--  Pressed Effect  -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="CloseIcon" Property="Foreground" Value="#B42C2C" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <!--  Minimize Button  -->
+            <Button
+                Width="19"
+                Height="19"
+                HorizontalAlignment="Right"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Click="MinimizeButton_Click"
+                DockPanel.Dock="Right"
+                ToolTip="Minimize">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <!--  Ensures entire button area is clickable  -->
+                            <materialDesign:PackIcon
+                                x:Name="MinimizeIcon"
+                                Width="20"
+                                Height="20"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource IconBrush}"
+                                Kind="MinusCircleOutline" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!--  Hover Effect  -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="MinimizeIcon" Property="Foreground" Value="#20C997" />
+                            </Trigger>
+                            <!--  Pressed Effect  -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="MinimizeIcon" Property="Foreground" Value="#158D6A" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </DockPanel>
+    </Border>
+</UserControl>

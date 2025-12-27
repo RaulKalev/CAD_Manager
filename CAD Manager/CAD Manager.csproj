@@ -1,0 +1,97 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net48</TargetFramework>
+		<RootNamespace>CAD_Manager</RootNamespace>
+		<PlatformTarget>x64</PlatformTarget>
+		<UseWPF>true</UseWPF>
+		<BaseOutputPath>C:\Users\mibil\OneDrive\Desktop\DevDlls\CADMa\New folder</BaseOutputPath>
+		<Company>Raul Kalev</Company>
+		<Authors>Raul Kalev</Authors>
+		<Version>1.0.1</Version>
+		<Title>CAD Manager</Title>
+		<FileVersion>1.0.1</FileVersion>
+		<OutputType>Library</OutputType>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+
+	<!-- Ensure layers.tiff is embedded correctly -->
+	<ItemGroup>
+		<EmbeddedResource Include="Assets\layers.tiff" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Page Remove="Themes\DarkTheme.xaml" />
+		<Page Remove="Themes\LightTheme.xaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Costura.Fody" Version="6.0.0">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="MaterialDesignColors" Version="3.1.0" />
+		<PackageReference Include="MaterialDesignThemes" Version="5.1.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ricaun.Revit.UI" Version="0.7.1">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="AdWindows">
+		  <HintPath>E:\Autodesk\Revit 2024\AdWindows.dll</HintPath>
+		  <Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="RevitAPI">
+		  <HintPath>E:\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
+		  <Private>False</Private>
+		</Reference>
+		<Reference Include="RevitAPIUI">
+		  <HintPath>E:\Autodesk\Revit 2024\RevitAPIUI.dll</HintPath>
+		  <Private>False</Private>
+		</Reference>
+		<Reference Include="System.Windows.Forms" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Resource Include="Assets\layers.tiff">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Themes\DarkTheme.xaml">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Themes\LightTheme.xaml">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="CustomTitleBar.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Properties\Settings.settings">
+	    <Generator>SettingsSingleFileGenerator</Generator>
+	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Page Update="CustomTitleBar.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+	</ItemGroup>
+
+</Project>

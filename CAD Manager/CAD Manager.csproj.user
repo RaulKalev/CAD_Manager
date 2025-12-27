@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebuggerFlavor>ProjectDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ActiveDebugProfile>Revit24</ActiveDebugProfile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="LineGraphicsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Window1.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="CustomTitleBar.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="LineGraphicsWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Resource Update="Themes\LightTheme.xaml">
+      <SubType>Designer</SubType>
+    </Resource>
+    <Resource Update="Themes\DarkTheme.xaml">
+      <SubType>Designer</SubType>
+    </Resource>
+    <Page Update="Window1.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,403 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\app.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\app.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\cad manager.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\cad manager.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\cad manager.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\cad manager.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\window1.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\window1.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\window1.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\window1.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\visibilitytoggler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\visibilitytoggler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\coloroverridehandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\coloroverridehandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\dwgvisibilitycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\dwgvisibilitycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\treenode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\treenode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\treeviewcontrols.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\treeviewcontrols.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\commandbuttons.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\commandbuttons.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\coloroverridecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\coloroverridecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\layervisibilitymanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\layervisibilitymanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\search.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\search.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\fodyweavers.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\fodyweavers.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\customtitlebar.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\customtitlebar.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\customtitlebar.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\customtitlebar.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\viewtemplateapplier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\viewtemplateapplier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\windowresizer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\windowresizer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\themes\\darktheme.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\themes\\darktheme.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\themes\\lighttheme.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\themes\\lighttheme.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|c:\\users\\mibil\\eule dropbox\\raul kalev\\me\\plugins\\cad_manager_kasutaseda\\cad manager\\linegraphicswindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{735F51E9-701C-4270-BA18-13EBF9D57D46}|CAD Manager\\CAD Manager.csproj|solutionrelative:cad manager\\linegraphicswindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 9,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CAD Manager",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CAD Manager.csproj",
+              "RelativeDocumentMoniker": "CAD Manager\\CAD Manager.csproj",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CAD Manager.csproj",
+              "RelativeToolTip": "CAD Manager\\CAD Manager.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-10-19T06:49:31.174Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "ColorOverrideController.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\ColorOverrideController.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\ColorOverrideController.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\ColorOverrideController.cs",
+              "RelativeToolTip": "CAD Manager\\ColorOverrideController.cs",
+              "ViewState": "AgIAADEAAAAAAAAAAAAowFcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T06:47:54.388Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ColorOverrideHandler.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\ColorOverrideHandler.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\ColorOverrideHandler.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\ColorOverrideHandler.cs",
+              "RelativeToolTip": "CAD Manager\\ColorOverrideHandler.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAIwGIAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T06:47:32.987Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "Search.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Search.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\Search.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Search.cs",
+              "RelativeToolTip": "CAD Manager\\Search.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADwAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T06:45:26.973Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "DWGVisibilityController.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\DWGVisibilityController.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\DWGVisibilityController.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\DWGVisibilityController.cs",
+              "RelativeToolTip": "CAD Manager\\DWGVisibilityController.cs",
+              "ViewState": "AgIAAIwAAAAAAAAAAAAIwBcAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T06:37:02.085Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "CustomTitleBar.xaml",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CustomTitleBar.xaml",
+              "RelativeDocumentMoniker": "CAD Manager\\CustomTitleBar.xaml",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CustomTitleBar.xaml",
+              "RelativeToolTip": "CAD Manager\\CustomTitleBar.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-07-26T16:31:43.921Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CAD Manager.csproj",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CAD Manager.csproj",
+              "RelativeDocumentMoniker": "CAD Manager\\CAD Manager.csproj",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CAD Manager.csproj",
+              "RelativeToolTip": "CAD Manager\\CAD Manager.csproj",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAAAFsAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-25T18:36:07.541Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "CustomTitleBar.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CustomTitleBar.xaml.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\CustomTitleBar.xaml.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CustomTitleBar.xaml.cs",
+              "RelativeToolTip": "CAD Manager\\CustomTitleBar.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-17T19:14:36.227Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "App.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\App.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\App.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\App.cs",
+              "RelativeToolTip": "CAD Manager\\App.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:24:34.851Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Window1.xaml",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Window1.xaml",
+              "RelativeDocumentMoniker": "CAD Manager\\Window1.xaml",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Window1.xaml",
+              "RelativeToolTip": "CAD Manager\\Window1.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-06-16T05:43:21.948Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Window1.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Window1.xaml.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\Window1.xaml.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Window1.xaml.cs",
+              "RelativeToolTip": "CAD Manager\\Window1.xaml.cs",
+              "ViewState": "AgIAABsBAAAAAAAAAAAswB8BAABCAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T05:43:26.213Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "CommandButtons.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CommandButtons.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\CommandButtons.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\CommandButtons.cs",
+              "RelativeToolTip": "CAD Manager\\CommandButtons.cs",
+              "ViewState": "AgIAADAAAAAAAAAAAAAWwGQAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:26:24.43Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "LayerVisibilityManager.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\LayerVisibilityManager.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\LayerVisibilityManager.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\LayerVisibilityManager.cs",
+              "RelativeToolTip": "CAD Manager\\LayerVisibilityManager.cs",
+              "ViewState": "AgIAAL4AAAAAAAAAAAArwP0AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T05:44:40.002Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Class1.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\Class1.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Class1.cs",
+              "RelativeToolTip": "CAD Manager\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:24:16.389Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "FodyWeavers.xml",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\FodyWeavers.xml",
+              "RelativeDocumentMoniker": "CAD Manager\\FodyWeavers.xml",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\FodyWeavers.xml",
+              "RelativeToolTip": "CAD Manager\\FodyWeavers.xml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003576|",
+              "WhenOpened": "2025-07-26T07:38:39.831Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "ViewTemplateApplier.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\ViewTemplateApplier.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\ViewTemplateApplier.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\ViewTemplateApplier.cs",
+              "RelativeToolTip": "CAD Manager\\ViewTemplateApplier.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:27:09.043Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "VisibilityToggler.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\VisibilityToggler.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\VisibilityToggler.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\VisibilityToggler.cs",
+              "RelativeToolTip": "CAD Manager\\VisibilityToggler.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:46:48.254Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "WindowResizer.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\WindowResizer.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\WindowResizer.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\WindowResizer.cs",
+              "RelativeToolTip": "CAD Manager\\WindowResizer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:46:57.21Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "TreeViewControls.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\TreeViewControls.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\TreeViewControls.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\TreeViewControls.cs",
+              "RelativeToolTip": "CAD Manager\\TreeViewControls.cs",
+              "ViewState": "AgIAALAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:47:01.178Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "TreeNode.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\TreeNode.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\TreeNode.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\TreeNode.cs",
+              "RelativeToolTip": "CAD Manager\\TreeNode.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T17:47:02.367Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "LightTheme.xaml",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Themes\\LightTheme.xaml",
+              "RelativeDocumentMoniker": "CAD Manager\\Themes\\LightTheme.xaml",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Themes\\LightTheme.xaml",
+              "RelativeToolTip": "CAD Manager\\Themes\\LightTheme.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-06-19T12:20:34.932Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "DarkTheme.xaml",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Themes\\DarkTheme.xaml",
+              "RelativeDocumentMoniker": "CAD Manager\\Themes\\DarkTheme.xaml",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\Themes\\DarkTheme.xaml",
+              "RelativeToolTip": "CAD Manager\\Themes\\DarkTheme.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-06-19T12:20:15.075Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "LineGraphicsWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\LineGraphicsWindow.xaml.cs",
+              "RelativeDocumentMoniker": "CAD Manager\\LineGraphicsWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\mibil\\EULE Dropbox\\Raul Kalev\\Me\\Plugins\\CAD_Manager_KasutaSeda\\CAD Manager\\LineGraphicsWindow.xaml.cs",
+              "RelativeToolTip": "CAD Manager\\LineGraphicsWindow.xaml.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAAABcAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-17T19:14:40.825Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

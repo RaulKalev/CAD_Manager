@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAD Manager", "CAD Manager\CAD Manager.csproj", "{735F51E9-701C-4270-BA18-13EBF9D57D46}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{361BB0E7-76C2-45D2-8352-2F586ABFE872}"
+	ProjectSection(SolutionItems) = preProject
+		RelayCommand.cs = RelayCommand.cs
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{735F51E9-701C-4270-BA18-13EBF9D57D46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{735F51E9-701C-4270-BA18-13EBF9D57D46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{735F51E9-701C-4270-BA18-13EBF9D57D46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{735F51E9-701C-4270-BA18-13EBF9D57D46}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

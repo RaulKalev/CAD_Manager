@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "CAD Manager": {
+      "commandName": "Project"
+    },
+    "Revit24": {
+      "commandName": "Executable",
+      "executablePath": "E:\\Autodesk\\Revit 2024\\Revit.exe"
+    }
+  }
+}
