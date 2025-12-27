@@ -62,27 +62,28 @@ C:\Users\mibil\OneDrive\Desktop\DevDlls\CADMa\Debug\net48\CAD Manager.pdb
 C:\Users\mibil\OneDrive\Desktop\DevDlls\CADMa\New folder\Debug\net48\CAD Manager.dll
 C:\Users\mibil\OneDrive\Desktop\DevDlls\CADMa\New folder\Debug\net48\CAD Manager.pdb
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.csproj.AssemblyReference.cache
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\Themes\ScrollBarStyle.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\CustomTitleBar.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\LineGraphicsWindow.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\UniversalPopupWindow.baml
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CADManagerWindow.g.cs
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\ApplyToViewsWindow.g.cs
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\CustomTitleBar.g.cs
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\LineGraphicsWindow.g.cs
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\UniversalPopupWindow.g.cs
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\GeneratedInternalTypeHelper.g.cs
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager_MarkupCompile.cache
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager_MarkupCompile.lref
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.dll
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.pdb
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CADManagerWindow.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\ApplyToViewsWindow.baml
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.g.resources
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.AssemblyInfoInputs.cache
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.AssemblyInfo.cs
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.csproj.CoreCompileInputs.cache
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\CustomTitleBar.baml
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\CustomTitleBar.g.cs
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\LineGraphicsWindow.g.cs
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\LineGraphicsWindow.baml
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\Themes\ScrollBarStyle.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.sourcelink.json
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.csproj.Fody.CopyLocal.cache
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.csproj.Fody.RuntimeCopyLocal.cache
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.sourcelink.json
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\ApplyToViewsWindow.baml
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\ApplyToViewsWindow.g.cs
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\UniversalPopupWindow.baml
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\UI\UniversalPopupWindow.g.cs
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.dll
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\CAD Manager.pdb
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Debug\net48\Themes\ToolTipStyle.baml
