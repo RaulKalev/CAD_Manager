@@ -125,8 +125,7 @@ namespace CAD_Manager.Services
                     pat = patElem?.Name;
                 }
 
-                if (overrides.ProjectionLineColor.IsValid && 
-                   (overrides.ProjectionLineColor.Red != 0 || overrides.ProjectionLineColor.Green != 0 || overrides.ProjectionLineColor.Blue != 0))
+                if (overrides.ProjectionLineColor.IsValid)
                 {
                      col = $"#{overrides.ProjectionLineColor.Red:X2}{overrides.ProjectionLineColor.Green:X2}{overrides.ProjectionLineColor.Blue:X2}";
                 }

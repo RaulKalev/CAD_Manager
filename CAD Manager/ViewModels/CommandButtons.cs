@@ -164,6 +164,17 @@ namespace CAD_Manager.ViewModels
 
             // Update shared data
             _visibilityToggler.DWGNodes = updatedDwgNodes;
+            // Explicitly update context on the window to propagate to all handlers
+            if (_refreshTreeView.Target is CADManagerWindow windowContext)
+            {
+                 windowContext.UpdateContext(doc, currentView);
+            }
+            else
+            {
+                // Fallback if target is not window (unlikely)
+                _visibilityToggler.Document = doc;
+                _visibilityToggler.CurrentView = currentView;
+            }
 
             // Replace the original DWGNodes list (used for UI filtering)
             if (_refreshTreeView.Target is CADManagerWindow window)

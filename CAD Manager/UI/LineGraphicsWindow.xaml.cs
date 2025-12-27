@@ -163,14 +163,21 @@ namespace CAD_Manager.UI
             }
             else if (firstPatternId != null && firstPatternId != ElementId.InvalidElementId)
             {
-                var patternElement = doc.GetElement(firstPatternId) as LinePatternElement;
-                if (patternElement != null)
+                if (firstPatternId == LinePatternElement.GetSolidPatternId())
                 {
-                    PatternComboBox.SelectedItem = patternElement.Name;
+                    PatternComboBox.SelectedItem = "Solid";
                 }
                 else
                 {
-                    PatternComboBox.SelectedIndex = 0; // <No Override>
+                    var patternElement = doc.GetElement(firstPatternId) as LinePatternElement;
+                    if (patternElement != null)
+                    {
+                        PatternComboBox.SelectedItem = patternElement.Name;
+                    }
+                    else
+                    {
+                        PatternComboBox.SelectedIndex = 0; // <No Override>
+                    }
                 }
             }
             else
@@ -221,6 +228,9 @@ namespace CAD_Manager.UI
                 PatternComboBox.Items.RemoveAt(1);
             }
 
+            // Explicitly add "Solid" first (common requirement)
+            PatternComboBox.Items.Add("Solid");
+
             // Get all line pattern elements from the project
             var linePatterns = new FilteredElementCollector(doc)
                 .OfClass(typeof(LinePatternElement))
@@ -229,7 +239,11 @@ namespace CAD_Manager.UI
 
             foreach (var pattern in linePatterns)
             {
-                PatternComboBox.Items.Add(pattern.Name);
+                // Avoid duplicates if "Solid" is also returned by collector
+                if (pattern.Name != "Solid")
+                {
+                    PatternComboBox.Items.Add(pattern.Name);
+                }
             }
         }
 
@@ -244,7 +258,7 @@ namespace CAD_Manager.UI
             // --- COLOR CHECK ---
             // Determine effective color (null if invalid/no override)
             Autodesk.Revit.DB.Color effectiveColor = null;
-            if (color != null && color.IsValid && (color.Red != 0 || color.Green != 0 || color.Blue != 0))
+            if (color != null && color.IsValid)
             {
                 effectiveColor = color;
             }

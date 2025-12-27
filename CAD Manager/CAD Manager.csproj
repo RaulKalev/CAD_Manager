@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
 		<TargetFramework>net48</TargetFramework>
 		<RootNamespace>CAD_Manager</RootNamespace>
 		<PlatformTarget>x64</PlatformTarget>
@@ -93,5 +94,10 @@
 			<SubType>Designer</SubType>
 		</Page>
 	</ItemGroup>
+
+	<!-- Post-Build Code Signing -->
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe&quot; sign /f &quot;C:\Users\mibil\OneDrive\Desktop\RKToolsCert.pfx&quot; /p RaulKalev /tr http://timestamp.digicert.com /td sha256 /fd sha256 &quot;$(TargetPath)&quot;" />
+	</Target>
 
 </Project>

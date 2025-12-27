@@ -55,7 +55,7 @@ namespace CAD_Manager.ViewModels
         /// <summary>
         /// Handles the toggling of visibility checkboxes, separating DWG and Layer toggles, and applies changes to selected rows.
         /// </summary>
-        public void HandleCheckBoxToggled(object sender, TreeView treeView)
+        public void HandleCheckBoxToggled(object sender, TreeView treeView, List<DWGNode> currentFilteredList)
         {
             if (sender is CheckBox checkBox)
             {
@@ -67,8 +67,8 @@ namespace CAD_Manager.ViewModels
 
                 var dataContext = treeViewItem.DataContext;
 
-                // Apply to all selected DWGNodes
-                var selectedDwgNodes = GetSelectedDWGNodes().ToList();
+                // Apply to all selected DWGNodes in the current list
+                var selectedDwgNodes = GetSelectedDWGNodes(currentFilteredList).ToList();
                 if (selectedDwgNodes.Any())
                 {
                     foreach (var selectedDwg in selectedDwgNodes)
@@ -77,8 +77,8 @@ namespace CAD_Manager.ViewModels
                     }
                 }
 
-                // Apply to all selected LayerNodes
-                var selectedLayerNodes = GetSelectedLayerNodes().ToList();
+                // Apply to all selected LayerNodes in the current list
+                var selectedLayerNodes = GetSelectedLayerNodes(currentFilteredList).ToList();
                 if (selectedLayerNodes.Any())
                 {
                     foreach (var selectedLayer in selectedLayerNodes)
@@ -165,19 +165,19 @@ namespace CAD_Manager.ViewModels
         }
 
         /// <summary>
-        /// Retrieves all selected DWGNodes.
+        /// Retrieves all selected DWGNodes from the provided list.
         /// </summary>
-        private IEnumerable<DWGNode> GetSelectedDWGNodes()
+        private IEnumerable<DWGNode> GetSelectedDWGNodes(List<DWGNode> nodes)
         {
-            return _dwgNodes?.Where(node => node.IsSelected) ?? Enumerable.Empty<DWGNode>();
+            return nodes?.Where(node => node.IsSelected) ?? Enumerable.Empty<DWGNode>();
         }
 
         /// <summary>
-        /// Retrieves all selected LayerNodes.
+        /// Retrieves all selected LayerNodes from the provided list.
         /// </summary>
-        private IEnumerable<LayerNode> GetSelectedLayerNodes()
+        private IEnumerable<LayerNode> GetSelectedLayerNodes(List<DWGNode> nodes)
         {
-            return _dwgNodes?
+            return nodes?
                 .SelectMany(dwg => dwg.Layers)
                 .Where(layer => layer.IsSelected)
                 ?? Enumerable.Empty<LayerNode>();

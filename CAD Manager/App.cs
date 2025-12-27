@@ -17,8 +17,19 @@ namespace CAD_Manager
 
         public Result OnStartup(UIControlledApplication application)
         {
-            // Create Ribbon Panel on the default Add-Ins tab
-            ribbonPanel = application.CreateRibbonPanel("Tools");
+            // Create Ribbon Tab
+            string tabName = "RK Tools";
+            try
+            {
+                application.CreateRibbonTab(tabName);
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+                // Tab already exists, ignore
+            }
+
+            // Create Ribbon Panel on the custom tab
+            ribbonPanel = application.CreateRibbonPanel(tabName, "Tools");
 
             // Create PushButton with embedded resource
             ribbonPanel.CreatePushButton<CADManagerCommand>()

@@ -38,7 +38,10 @@ C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net4
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.AssemblyInfo.cs
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.csproj.CoreCompileInputs.cache
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.sourcelink.json
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.csproj.Fody.CopyLocal.cache
-C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.csproj.Fody.RuntimeCopyLocal.cache
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.dll
 C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.pdb
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\Themes\ToolTipStyle.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\UI\UniversalPopupWindow.baml
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\UI\UniversalPopupWindow.g.cs
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.csproj.Fody.CopyLocal.cache
+C:\Users\mibil\Documents\AntigravityGit\CAD_Manager\CAD Manager\obj\Release\net48\CAD Manager.csproj.Fody.RuntimeCopyLocal.cache

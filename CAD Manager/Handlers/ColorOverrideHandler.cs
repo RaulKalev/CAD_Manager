@@ -155,6 +155,12 @@ namespace CAD_Manager.Handlers
         {
             try
             {
+                // Handle "Solid" pattern explicitly as it's a special system element
+                if (patternName.Equals("Solid", StringComparison.OrdinalIgnoreCase))
+                {
+                    return LinePatternElement.GetSolidPatternId();
+                }
+
                 // Get all line pattern elements
                 var linePatterns = new FilteredElementCollector(doc)
                     .OfClass(typeof(LinePatternElement))

@@ -212,11 +212,47 @@ namespace CAD_Manager
         {
             if (sender is CheckBox checkBox)
             {
-                _treeViewControls.HandleCheckBoxToggled(checkBox, DWGTreeView);
+                _treeViewControls.HandleCheckBoxToggled(checkBox, DWGTreeView, FilteredDWGNodes);
                 
                 if (checkBox.DataContext is DWGNode dwgNode)
                 {
-                    SyncFilteredNodeToOriginal(dwgNode);
+                    // Sync ALL selected nodes if the clicked node is part of a selection
+                     if (dwgNode.IsSelected)
+                    {
+                        var selectedNodes = FilteredDWGNodes.Where(n => n.IsSelected).ToList();
+                        foreach (var selected in selectedNodes)
+                        {
+                            SyncFilteredNodeToOriginal(selected);
+                        }
+                    }
+                    else
+                    {
+                        // Just sync the clicked node
+                         SyncFilteredNodeToOriginal(dwgNode);
+                    }
+                }
+                else if (checkBox.DataContext is LayerNode layerNode)
+                {
+                    // Sync ALL selected layers if the clicked layer is part of a selection
+                    if (layerNode.IsSelected)
+                    {
+                         var selectedLayers = FilteredDWGNodes.SelectMany(d => d.Layers).Where(l => l.IsSelected).ToList();
+                         foreach(var selected in selectedLayers)
+                         {
+                             // We need to find the parent DWG for the layer to sync properly if needed,
+                             // but SyncFilteredNodeToOriginal works on DWGNodes.
+                             // Layer properties are reference types within DWGNodes, so modifying the LayerNode object
+                             // in the filtered list *might* update the original if they share reference,
+                             // BUT Search.cs creates NEW LayerNode objects.
+                             // We must find the original LayerNode and update it.
+                             
+                             SyncFilteredLayerToOriginal(selected);
+                         }
+                    }
+                    else
+                    {
+                        SyncFilteredLayerToOriginal(layerNode);
+                    }
                 }
             }
         }
@@ -233,7 +269,8 @@ namespace CAD_Manager
                 if (clickedNode.IsSelected)
                 {
                     // Apply to all selected DWG nodes
-                    var selectedNodes = DWGNodes.Where(n => n.IsSelected).ToList();
+                    // Use FilteredDWGNodes to ensure we capture selection from the active view list
+                    var selectedNodes = FilteredDWGNodes.Where(n => n.IsSelected).ToList();
                     foreach (var node in selectedNodes)
                     {
                         if (node != clickedNode)
@@ -270,6 +307,33 @@ namespace CAD_Manager
                 original.LinePattern = filteredNode.LinePattern;
                 original.LineWeight = filteredNode.LineWeight;
                 original.IsSelected = filteredNode.IsSelected;
+                
+                // Note: Layers are separate objects in the clone, but we handle them specifically in SyncFilteredLayerToOriginal
+            }
+        }
+
+        private void SyncFilteredLayerToOriginal(LayerNode filteredLayer)
+        {
+            if (filteredLayer == null || DWGNodes == null) return;
+
+            // Find parent DWG using the cache
+             var parentDwg = FindParentDWGNode(filteredLayer);
+            if (parentDwg == null) return; // Can't find parent in current view context
+
+            // Start from the original DWG list to find the original LayerNode
+            // We match by DWG ElementId first, then Layer Name
+            var originalDwg = DWGNodes.FirstOrDefault(n => n.ElementId == parentDwg.ElementId);
+            if (originalDwg != null)
+            {
+                 var originalLayer = originalDwg.Layers.FirstOrDefault(l => l.Name == filteredLayer.Name);
+                 if (originalLayer != null && !ReferenceEquals(originalLayer, filteredLayer))
+                 {
+                     originalLayer.IsChecked = filteredLayer.IsChecked;
+                     originalLayer.LineColor = filteredLayer.LineColor;
+                     originalLayer.LinePattern = filteredLayer.LinePattern;
+                     originalLayer.LineWeight = filteredLayer.LineWeight;
+                     originalLayer.IsSelected = filteredLayer.IsSelected;
+                 }
             }
         }
 
@@ -342,7 +406,8 @@ namespace CAD_Manager
                         if (clickedDwgNode.IsSelected)
                         {
                             // Apply to all selected DWG nodes
-                            nodesToUpdate.AddRange(DWGNodes.Where(n => n.IsSelected && n.ElementId != null));
+                            // Use FilteredDWGNodes to ensure we capture selection from the active view list
+                            nodesToUpdate.AddRange(FilteredDWGNodes.Where(n => n.IsSelected && n.ElementId != null));
                         }
                         else
                         {
@@ -405,7 +470,8 @@ namespace CAD_Manager
                         if (clickedLayerNode.IsSelected)
                         {
                             // Apply to all selected Layer nodes
-                            layersToUpdate.AddRange(DWGNodes.SelectMany(dwg => dwg.Layers).Where(l => l.IsSelected));
+                            // Use FilteredDWGNodes to ensure we capture selection from the active view list
+                            layersToUpdate.AddRange(FilteredDWGNodes.SelectMany(dwg => dwg.Layers).Where(l => l.IsSelected));
                         }
                         else
                         {
@@ -515,6 +581,26 @@ namespace CAD_Manager
         }
 
 
+        public void UpdateContext(Document doc, View view)
+        {
+            if (_visibilityToggler != null)
+            {
+                _visibilityToggler.Document = doc;
+                _visibilityToggler.CurrentView = view;
+            }
+
+            if (_halftoneHandler != null)
+            {
+                _halftoneHandler.Document = doc;
+                _halftoneHandler.CurrentView = view;
+            }
+            
+            // ApplyToViewsHandler updates its SourceView on button click, but good to keep in sync if needed later
+            if (_applyToViewsHandler != null)
+            {
+                _applyToViewsHandler.Document = doc;
+            }
+        }
         private void TreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var sourceElement = e.OriginalSource as DependencyObject;
@@ -732,7 +818,8 @@ namespace CAD_Manager
         }
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!DWGTreeView.IsKeyboardFocusWithin)
+            // Allow Ctrl+A unless the user is typing in the search box
+            if (SearchBox.IsKeyboardFocusWithin)
                 return;
 
             if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
