@@ -149,7 +149,90 @@ namespace CAD_Manager.Handlers
                 }
             }
 
+            // Copy linked-model DWG overrides
+            CopyLinkedDWGOverrides(sourceView, targetView, appliedDWGNames);
+
             return appliedDWGNames;
+        }
+
+        private void CopyLinkedDWGOverrides(View sourceView, View targetView, HashSet<string> appliedDWGNames)
+        {
+            try
+            {
+                // Resolve target view template
+                ElementId targetTemplateId = targetView.ViewTemplateId;
+                View targetViewToModify = targetTemplateId != ElementId.InvalidElementId
+                    ? Document.GetElement(targetTemplateId) as View ?? targetView
+                    : targetView;
+
+                FilteredElementCollector linkCollector = new FilteredElementCollector(Document, sourceView.Id)
+                    .OfClass(typeof(RevitLinkInstance));
+
+                foreach (Element linkElem in linkCollector)
+                {
+                    if (!(linkElem is RevitLinkInstance linkInst)) continue;
+
+                    Document linkedDoc = linkInst.GetLinkDocument();
+                    if (linkedDoc == null) continue;
+
+                    RevitLinkGraphicsSettings srcSettings = sourceView.GetLinkOverrides(linkInst.Id);
+                    if (srcSettings == null) continue;
+
+                    RevitLinkGraphicsSettings dstSettings = targetViewToModify.GetLinkOverrides(linkInst.Id);
+                    if (dstSettings == null) dstSettings = new RevitLinkGraphicsSettings();
+                    dstSettings.LinkVisibilityType = RevitLinkGraphicsSettings.LinkVisibilityType.Custom;
+
+                    HashSet<ElementId> processedCategories = new HashSet<ElementId>();
+
+                    foreach (Element importElem in new FilteredElementCollector(linkedDoc).OfClass(typeof(ImportInstance)))
+                    {
+                        if (!(importElem is ImportInstance li) || li.Category == null) continue;
+
+                        if (processedCategories.Add(li.Category.Id))
+                        {
+                            CopyLinkCategorySettings(srcSettings, dstSettings, li.Category.Id);
+                            appliedDWGNames.Add(li.Category.Name + " (linked)");
+                        }
+
+                        foreach (Category subCat in li.Category.SubCategories)
+                        {
+                            if (subCat != null && processedCategories.Add(subCat.Id))
+                                CopyLinkCategorySettings(srcSettings, dstSettings, subCat.Id);
+                        }
+                    }
+
+                    targetViewToModify.SetLinkOverrides(linkInst.Id, dstSettings);
+                }
+            }
+            catch { /* skip on failure */ }
+        }
+
+        private void CopyLinkCategorySettings(RevitLinkGraphicsSettings src, RevitLinkGraphicsSettings dst, ElementId catId)
+        {
+            try
+            {
+                bool isHidden = src.IsCategoryHidden(catId);
+                dst.SetCategoryHidden(catId, isHidden);
+
+                OverrideGraphicSettings srcOverrides = src.GetCategoryOverrides(catId);
+                if (srcOverrides == null) return;
+
+                OverrideGraphicSettings newOverrides = new OverrideGraphicSettings();
+
+                newOverrides.SetHalftone(srcOverrides.Halftone);
+
+                if (srcOverrides.ProjectionLineColor.IsValid)
+                    newOverrides.SetProjectionLineColor(srcOverrides.ProjectionLineColor);
+
+                if (srcOverrides.ProjectionLinePatternId != ElementId.InvalidElementId)
+                    newOverrides.SetProjectionLinePatternId(srcOverrides.ProjectionLinePatternId);
+
+                if (srcOverrides.ProjectionLineWeight > 0)
+                    newOverrides.SetProjectionLineWeight(srcOverrides.ProjectionLineWeight);
+
+                dst.SetCategoryOverrides(catId, newOverrides);
+            }
+            catch { /* skip on failure */ }
         }
 
         private void CopyCategorySettings(View sourceView, View targetView, Category category)

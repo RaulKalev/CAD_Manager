@@ -69,7 +69,12 @@ namespace CAD_Manager.Models
         }
         public List<LayerNode> Layers { get; set; }
         public ElementId ElementId { get; set; }
-        
+
+        // Linked Revit model support
+        public bool IsLinkedDWG { get; set; }
+        public ElementId RevitLinkInstanceId { get; set; }
+        public string LinkedModelName { get; set; }
+
         // Graphic Overrides
         public string LinePattern { get; set; }
         public string LineColor { get; set; } // Hex string #RRGGBB

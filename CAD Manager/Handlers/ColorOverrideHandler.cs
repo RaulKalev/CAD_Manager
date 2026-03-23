@@ -50,83 +50,88 @@ namespace CAD_Manager.Handlers
 
                     foreach (DWGNode dwgNode in DWGNodes)
                     {
-                        ImportInstance importInstance = doc.GetElement(dwgNode.ElementId) as ImportInstance;
-
-                        if (importInstance != null && importInstance.Category != null)
+                        if (dwgNode.IsLinkedDWG)
                         {
-                            // Determine target categories based on mode
-                            var targetCategories = new List<Category>();
-                            if (!IsLayerOverride)
-                            {
-                                targetCategories.Add(importInstance.Category);
-                            }
-                            else
-                            {
-                                foreach (LayerNode layer in dwgNode.Layers)
-                                {
-                                    Category layerCategory = FindLayerCategory(importInstance, layer.Name);
-                                    if (layerCategory != null)
-                                    {
-                                        targetCategories.Add(layerCategory);
-                                    }
-                                }
-                            }
+                            ApplyLinkedColorOverrides(doc, viewToModify, dwgNode);
+                        }
+                        else
+                        {
+                            ImportInstance importInstance = doc.GetElement(dwgNode.ElementId) as ImportInstance;
 
-                            // Apply overrides to each target category
-                            foreach (Category cat in targetCategories)
+                            if (importInstance != null && importInstance.Category != null)
                             {
-                                OverrideGraphicSettings overrideSettings;
-                                
-                                if (ClearOverrides)
+                                // Determine target categories based on mode
+                                var targetCategories = new List<Category>();
+                                if (!IsLayerOverride)
                                 {
-                                    overrideSettings = new OverrideGraphicSettings(); // Reset to default
+                                    targetCategories.Add(importInstance.Category);
                                 }
                                 else
                                 {
-                                    // Get existing overrides to merge with
-                                    overrideSettings = viewToModify.GetCategoryOverrides(cat.Id);
-
-                                    // Apply Color (if changed)
-                                    if (OverrideColor != null)
+                                    foreach (LayerNode layer in dwgNode.Layers)
                                     {
-                                        overrideSettings.SetProjectionLineColor(OverrideColor);
-                                    }
-
-                                    // Apply Line Pattern (if changed)
-                                    if (LinePattern != null)
-                                    {
-                                        if (LinePattern == "<No Override>")
+                                        Category layerCategory = FindLayerCategory(importInstance, layer.Name);
+                                        if (layerCategory != null)
                                         {
-                                            // Explicitly clear pattern override
-                                            overrideSettings.SetProjectionLinePatternId(ElementId.InvalidElementId);
+                                            targetCategories.Add(layerCategory);
                                         }
-                                        else if (!string.IsNullOrEmpty(LinePattern))
+                                    }
+                                }
+
+                                // Apply overrides to each target category
+                                foreach (Category cat in targetCategories)
+                                {
+                                    OverrideGraphicSettings overrideSettings;
+
+                                    if (ClearOverrides)
+                                    {
+                                        overrideSettings = new OverrideGraphicSettings(); // Reset to default
+                                    }
+                                    else
+                                    {
+                                        // Get existing overrides to merge with
+                                        overrideSettings = viewToModify.GetCategoryOverrides(cat.Id);
+
+                                        // Apply Color (if changed)
+                                        if (OverrideColor != null)
                                         {
-                                            var linePatternId = GetLinePatternId(doc, LinePattern);
-                                            if (linePatternId != null && linePatternId != ElementId.InvalidElementId)
+                                            overrideSettings.SetProjectionLineColor(OverrideColor);
+                                        }
+
+                                        // Apply Line Pattern (if changed)
+                                        if (LinePattern != null)
+                                        {
+                                            if (LinePattern == "<No Override>")
                                             {
-                                                overrideSettings.SetProjectionLinePatternId(linePatternId);
+                                                overrideSettings.SetProjectionLinePatternId(ElementId.InvalidElementId);
+                                            }
+                                            else if (!string.IsNullOrEmpty(LinePattern))
+                                            {
+                                                var linePatternId = GetLinePatternId(doc, LinePattern);
+                                                if (linePatternId != null && linePatternId != ElementId.InvalidElementId)
+                                                {
+                                                    overrideSettings.SetProjectionLinePatternId(linePatternId);
+                                                }
+                                            }
+                                        }
+
+                                        // Apply Line Weight (if changed)
+                                        if (LineWeight.HasValue)
+                                        {
+                                            if (LineWeight.Value == -1)
+                                            {
+                                                overrideSettings.SetProjectionLineWeight(OverrideGraphicSettings.InvalidPenNumber);
+                                            }
+                                            else if (LineWeight.Value > 0)
+                                            {
+                                                overrideSettings.SetProjectionLineWeight(LineWeight.Value);
                                             }
                                         }
                                     }
 
-                                    // Apply Line Weight (if changed)
-                                    if (LineWeight.HasValue)
-                                    {
-                                        if (LineWeight.Value == -1)
-                                        {
-                                            // Explicitly clear weight override
-                                            overrideSettings.SetProjectionLineWeight(OverrideGraphicSettings.InvalidPenNumber);
-                                        }
-                                        else if (LineWeight.Value > 0)
-                                        {
-                                            overrideSettings.SetProjectionLineWeight(LineWeight.Value);
-                                        }
-                                    }
+                                    // Apply the merged settings back to the view
+                                    viewToModify.SetCategoryOverrides(cat.Id, overrideSettings);
                                 }
-
-                                // Apply the merged settings back to the view
-                                viewToModify.SetCategoryOverrides(cat.Id, overrideSettings);
                             }
                         }
                     }
@@ -141,6 +146,106 @@ namespace CAD_Manager.Handlers
                 }
             }
         }
+        private void ApplyLinkedColorOverrides(Document doc, View viewToModify, DWGNode dwgNode)
+        {
+            try
+            {
+                if (dwgNode.RevitLinkInstanceId == null || dwgNode.RevitLinkInstanceId == ElementId.InvalidElementId)
+                    return;
+
+                RevitLinkInstance linkInst = doc.GetElement(dwgNode.RevitLinkInstanceId) as RevitLinkInstance;
+                if (linkInst == null) return;
+
+                Document linkedDoc = linkInst.GetLinkDocument();
+                if (linkedDoc == null) return;
+
+                ImportInstance importInstance = FindImportInLinkedDoc(linkedDoc, dwgNode.ElementId);
+                if (importInstance == null || importInstance.Category == null) return;
+
+                RevitLinkGraphicsSettings settings = viewToModify.GetLinkOverrides(linkInst.Id);
+                if (settings == null) settings = new RevitLinkGraphicsSettings();
+                settings.LinkVisibilityType = RevitLinkGraphicsSettings.LinkVisibilityType.Custom;
+
+                // Determine target categories based on mode
+                var targetCategoryIds = new List<ElementId>();
+                if (!IsLayerOverride)
+                {
+                    targetCategoryIds.Add(importInstance.Category.Id);
+                }
+                else
+                {
+                    foreach (LayerNode layer in dwgNode.Layers)
+                    {
+                        Category layerCategory = FindLayerCategoryInLinkedDoc(importInstance, layer.Name);
+                        if (layerCategory != null)
+                            targetCategoryIds.Add(layerCategory.Id);
+                    }
+                }
+
+                // Apply overrides to each target category via link settings
+                foreach (ElementId catId in targetCategoryIds)
+                {
+                    OverrideGraphicSettings overrideSettings;
+
+                    if (ClearOverrides)
+                    {
+                        overrideSettings = new OverrideGraphicSettings();
+                    }
+                    else
+                    {
+                        overrideSettings = settings.GetCategoryOverrides(catId) ?? new OverrideGraphicSettings();
+
+                        if (OverrideColor != null)
+                            overrideSettings.SetProjectionLineColor(OverrideColor);
+
+                        if (LinePattern != null)
+                        {
+                            if (LinePattern == "<No Override>")
+                                overrideSettings.SetProjectionLinePatternId(ElementId.InvalidElementId);
+                            else if (!string.IsNullOrEmpty(LinePattern))
+                            {
+                                var linePatternId = GetLinePatternId(doc, LinePattern);
+                                if (linePatternId != null && linePatternId != ElementId.InvalidElementId)
+                                    overrideSettings.SetProjectionLinePatternId(linePatternId);
+                            }
+                        }
+
+                        if (LineWeight.HasValue)
+                        {
+                            if (LineWeight.Value == -1)
+                                overrideSettings.SetProjectionLineWeight(OverrideGraphicSettings.InvalidPenNumber);
+                            else if (LineWeight.Value > 0)
+                                overrideSettings.SetProjectionLineWeight(LineWeight.Value);
+                        }
+                    }
+
+                    settings.SetCategoryOverrides(catId, overrideSettings);
+                }
+
+                viewToModify.SetLinkOverrides(linkInst.Id, settings);
+            }
+            catch { /* skip on failure */ }
+        }
+
+        private ImportInstance FindImportInLinkedDoc(Document linkedDoc, ElementId elementId)
+        {
+            return linkedDoc?.GetElement(elementId) as ImportInstance;
+        }
+
+        private Category FindLayerCategoryInLinkedDoc(ImportInstance importInstance, string layerName)
+        {
+            var key = layerName?.Normalize(NormalizationForm.FormKC);
+
+            if (importInstance.Category?.Name?.Normalize(NormalizationForm.FormKC)
+                    .Equals(key, StringComparison.CurrentCultureIgnoreCase) == true)
+                return importInstance.Category;
+
+            return importInstance.Category?.SubCategories?
+                .Cast<Category>()
+                .FirstOrDefault(sub => (sub.Name?.Normalize(NormalizationForm.FormKC))
+                    .Equals(key, StringComparison.CurrentCultureIgnoreCase));
+        }
+
         private Category FindLayerCategory(ImportInstance importInstance, string layerName)
         {
             var key = layerName?.Normalize(NormalizationForm.FormKC);

@@ -167,6 +167,7 @@ namespace CAD_Manager.ViewModels
         {
             ElementId templateId = _view.ViewTemplateId;
             View templateView = templateId != ElementId.InvalidElementId ? _document.GetElement(templateId) as View : null;
+            View viewToModify = templateView ?? _view;
 
             using (Transaction trans = new Transaction(_document, "Apply DWG Visibility"))
             {
@@ -174,33 +175,22 @@ namespace CAD_Manager.ViewModels
 
                 foreach (DWGNode dwgNode in dwgNodes)
                 {
-                    ImportInstance importInstance = FindImportInstanceByName(dwgNode.Name);
-                    if (importInstance != null)
+                    if (dwgNode.IsLinkedDWG)
                     {
-                        // Set DWG visibility and overrides
-                        if (templateView != null)
+                        ApplyLinkedDWGVisibility(viewToModify, dwgNode);
+                    }
+                    else
+                    {
+                        ImportInstance importInstance = FindImportInstanceByName(dwgNode.Name);
+                        if (importInstance != null)
                         {
-                            SetCategoryProperties(templateView, importInstance.Category, dwgNode.IsChecked, dwgNode);
-                        }
-                        else
-                        {
-                            SetCategoryProperties(_view, importInstance.Category, dwgNode.IsChecked, dwgNode);
-                        }
+                            SetCategoryProperties(viewToModify, importInstance.Category, dwgNode.IsChecked, dwgNode);
 
-                        // Set layer visibility and overrides
-                        foreach (LayerNode layer in dwgNode.Layers)
-                        {
-                            Category layerCategory = FindLayerCategory(importInstance, layer.Name);
-                            if (layerCategory != null)
+                            foreach (LayerNode layer in dwgNode.Layers)
                             {
-                                if (templateView != null)
-                                {
-                                    SetCategoryProperties(templateView, layerCategory, layer.IsChecked, layer);
-                                }
-                                else
-                                {
-                                    SetCategoryProperties(_view, layerCategory, layer.IsChecked, layer);
-                                }
+                                Category layerCategory = FindLayerCategory(importInstance, layer.Name);
+                                if (layerCategory != null)
+                                    SetCategoryProperties(viewToModify, layerCategory, layer.IsChecked, layer);
                             }
                         }
                     }
@@ -208,6 +198,98 @@ namespace CAD_Manager.ViewModels
 
                 trans.Commit();
             }
+        }
+
+        /// <summary>
+        /// Applies visibility and graphic overrides for a DWG embedded in a linked Revit model.
+        /// </summary>
+        private void ApplyLinkedDWGVisibility(View viewToModify, DWGNode dwgNode)
+        {
+            try
+            {
+                if (dwgNode.RevitLinkInstanceId == null || dwgNode.RevitLinkInstanceId == ElementId.InvalidElementId)
+                    return;
+
+                RevitLinkInstance linkInst = _document.GetElement(dwgNode.RevitLinkInstanceId) as RevitLinkInstance;
+                if (linkInst == null) return;
+
+                Document linkedDoc = linkInst.GetLinkDocument();
+                if (linkedDoc == null) return;
+
+                ImportInstance importInstance = FindImportInstanceInLinkedDoc(linkedDoc, dwgNode.Name);
+                if (importInstance == null) return;
+
+                RevitLinkGraphicsSettings settings = viewToModify.GetLinkOverrides(linkInst.Id);
+                if (settings == null) settings = new RevitLinkGraphicsSettings();
+
+                settings.LinkVisibilityType = RevitLinkGraphicsSettings.LinkVisibilityType.Custom;
+
+                // DWG-level visibility and overrides
+                settings.SetCategoryHidden(importInstance.Category.Id, !dwgNode.IsChecked);
+                settings.SetCategoryOverrides(importInstance.Category.Id, BuildOverrideSettings(dwgNode));
+
+                // Layer-level visibility and overrides
+                foreach (LayerNode layer in dwgNode.Layers)
+                {
+                    Category layerCategory = FindLayerCategoryInLinkedDoc(importInstance, layer.Name);
+                    if (layerCategory != null)
+                    {
+                        settings.SetCategoryHidden(layerCategory.Id, !layer.IsChecked);
+                        settings.SetCategoryOverrides(layerCategory.Id, BuildOverrideSettings(layer));
+                    }
+                }
+
+                viewToModify.SetLinkOverrides(linkInst.Id, settings);
+            }
+            catch { /* skip on failure */ }
+        }
+
+        /// <summary>
+        /// Builds an OverrideGraphicSettings from a DWGNode or LayerNode's stored properties.
+        /// </summary>
+        private OverrideGraphicSettings BuildOverrideSettings(object node)
+        {
+            string patternName = null;
+            string colorHex = null;
+            int? weight = null;
+            bool halftone = false;
+
+            if (node is DWGNode dwg)
+            {
+                patternName = dwg.LinePattern;
+                colorHex = dwg.LineColor;
+                weight = dwg.LineWeight;
+                halftone = dwg.IsHalftone;
+            }
+            else if (node is LayerNode layer)
+            {
+                patternName = layer.LinePattern;
+                colorHex = layer.LineColor;
+                weight = layer.LineWeight;
+            }
+
+            OverrideGraphicSettings settings = new OverrideGraphicSettings();
+
+            if (!string.IsNullOrEmpty(colorHex))
+            {
+                var c = ParseColorHex(colorHex);
+                if (c != null) settings.SetProjectionLineColor(c);
+            }
+
+            if (weight.HasValue && weight.Value > 0)
+                settings.SetProjectionLineWeight(weight.Value);
+
+            if (!string.IsNullOrEmpty(patternName))
+            {
+                ElementId patId = GetPatternId(patternName);
+                if (patId != ElementId.InvalidElementId)
+                    settings.SetProjectionLinePatternId(patId);
+            }
+
+            if (halftone)
+                settings.SetHalftone(true);
+
+            return settings;
         }
 
         /// <summary>
@@ -219,60 +301,8 @@ namespace CAD_Manager.ViewModels
             {
                 if (category == null) return;
 
-                // 1. Visibility
                 view.SetCategoryHidden(category.Id, !isVisible);
-
-                // 2. Graphic Overrides - Create NEW settings to ensure "No Value = No Override"
-                string patternName = null;
-                string colorHex = null;
-                int? weight = null;
-
-                if (node is DWGNode dwg)
-                {
-                    patternName = dwg.LinePattern;
-                    colorHex = dwg.LineColor;
-                    weight = dwg.LineWeight;
-                }
-                else if (node is LayerNode layer)
-                {
-                    patternName = layer.LinePattern;
-                    colorHex = layer.LineColor;
-                    weight = layer.LineWeight;
-                }
-
-                // Create NEW settings to ensure "No Value = No Override" is enforced strictly
-                OverrideGraphicSettings newSettings = new OverrideGraphicSettings();
-                
-                // Color
-                if (!string.IsNullOrEmpty(colorHex))
-                {
-                    var c = ParseColorHex(colorHex);
-                    if (c != null) newSettings.SetProjectionLineColor(c);
-                }
-
-                // Weight
-                if (weight.HasValue && weight.Value > 0)
-                {
-                    newSettings.SetProjectionLineWeight(weight.Value);
-                }
-
-                // Pattern
-                if (!string.IsNullOrEmpty(patternName))
-                {
-                    ElementId patId = GetPatternId(patternName);
-                    if (patId != ElementId.InvalidElementId)
-                    {
-                        newSettings.SetProjectionLinePatternId(patId);
-                    }
-                }
-
-                // Halftone (if available on node? DWGNode has it. LayerNode doesn't usually, but maybe inherited?)
-                if (node is DWGNode dNode && dNode.IsHalftone)
-                {
-                    newSettings.SetHalftone(true);
-                }
-
-                view.SetCategoryOverrides(category.Id, newSettings);
+                view.SetCategoryOverrides(category.Id, BuildOverrideSettings(node));
             }
             catch
             {
@@ -343,6 +373,48 @@ namespace CAD_Manager.ViewModels
                 {
                     return subCategory;
                 }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds an ImportInstance by DWG name within a linked document.
+        /// </summary>
+        private ImportInstance FindImportInstanceInLinkedDoc(Document linkedDoc, string name)
+        {
+            var key = name?.Normalize(NormalizationForm.FormKC);
+
+            foreach (Element element in new FilteredElementCollector(linkedDoc).OfClass(typeof(ImportInstance)))
+            {
+                if (element is ImportInstance importInstance &&
+                    linkedDoc.GetElement(importInstance.GetTypeId()) is ElementType type &&
+                    (type.Name?.Normalize(NormalizationForm.FormKC))
+                        .Equals(key, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return importInstance;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds a layer category by name within a linked ImportInstance.
+        /// </summary>
+        private Category FindLayerCategoryInLinkedDoc(ImportInstance importInstance, string layerName)
+        {
+            var key = layerName?.Normalize(NormalizationForm.FormKC);
+
+            if (importInstance.Category?.Name?.Normalize(NormalizationForm.FormKC)
+                    .Equals(key, StringComparison.CurrentCultureIgnoreCase) == true)
+                return importInstance.Category;
+
+            foreach (Category subCategory in importInstance.Category.SubCategories)
+            {
+                if ((subCategory.Name?.Normalize(NormalizationForm.FormKC))
+                        .Equals(key, StringComparison.CurrentCultureIgnoreCase))
+                    return subCategory;
             }
 
             return null;
