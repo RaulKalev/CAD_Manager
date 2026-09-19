@@ -8,23 +8,96 @@ namespace CAD_Manager.Handlers
 {
     public class ApplyToViewsHandler : IExternalEventHandler
     {
-        public Document Document { get; set; }
-        public View SourceView { get; set; }
-        public List<View> TargetViews { get; set; }
-        public Action<string> OnComplete { get; set; }
-        public Action<string> OnError { get; set; }
+        private readonly object _requestLock = new object();
+        private ApplyToViewsRequest _pendingRequest;
+
+        public bool TrySubmit(
+            Document document,
+            ElementId sourceViewId,
+            IEnumerable<ElementId> targetViewIds,
+            Action<string> onComplete,
+            Action<string> onError)
+        {
+            if (document == null ||
+                sourceViewId == null ||
+                sourceViewId == ElementId.InvalidElementId ||
+                targetViewIds == null)
+            {
+                return false;
+            }
+
+            List<ElementId> targets = new HashSet<ElementId>(targetViewIds)
+                .Where(id => id != null && id != ElementId.InvalidElementId)
+                .ToList();
+
+            if (targets.Count == 0)
+                return false;
+
+            lock (_requestLock)
+            {
+                if (_pendingRequest != null)
+                    return false;
+
+                _pendingRequest = new ApplyToViewsRequest(
+                    document,
+                    sourceViewId,
+                    targets,
+                    onComplete,
+                    onError);
+                return true;
+            }
+        }
+
+        public void CancelPendingRequest()
+        {
+            lock (_requestLock)
+            {
+                _pendingRequest = null;
+            }
+        }
 
         public void Execute(UIApplication app)
         {
-            if (Document == null || SourceView == null || TargetViews == null || TargetViews.Count == 0)
+            ApplyToViewsRequest request;
+            lock (_requestLock)
             {
-                OnError?.Invoke("Invalid parameters");
+                request = _pendingRequest;
+            }
+
+            if (request == null)
+                return;
+
+            UIDocument uiDocument = app?.ActiveUIDocument;
+            Document document = uiDocument?.Document;
+
+            if (document == null || request.Document == null || !document.Equals(request.Document))
+            {
+                CompleteRequest(request, false, "The source document is no longer active. Reopen Apply to Views and try again.");
                 return;
             }
 
             try
             {
-                using (Transaction trans = new Transaction(Document, "Apply Settings to Views"))
+                View sourceView = document.GetElement(request.SourceViewId) as View;
+                if (sourceView == null)
+                {
+                    CompleteRequest(request, false, "The source view is no longer available.");
+                    return;
+                }
+
+                List<View> targetViews = request.TargetViewIds
+                    .Select(id => document.GetElement(id) as View)
+                    .Where(view => view != null && !view.IsTemplate)
+                    .ToList();
+
+                if (targetViews.Count != request.TargetViewIds.Count)
+                {
+                    CompleteRequest(request, false, "One or more target views are no longer available. Refresh the list and try again.");
+                    return;
+                }
+
+                string report;
+                using (Transaction trans = new Transaction(document, "Apply Settings to Views"))
                 {
                     trans.Start();
 
@@ -33,7 +106,7 @@ namespace CAD_Manager.Handlers
                     HashSet<string> allDWGsInSource = new HashSet<string>();
 
                     // First, collect all DWG names from source view
-                    FilteredElementCollector sourceCollector = new FilteredElementCollector(Document, SourceView.Id)
+                    FilteredElementCollector sourceCollector = new FilteredElementCollector(document, sourceView.Id)
                         .OfClass(typeof(ImportInstance));
 
                     foreach (Element element in sourceCollector)
@@ -46,23 +119,40 @@ namespace CAD_Manager.Handlers
                     }
 
                     // Apply to each target view and track what was applied
-                    foreach (View targetView in TargetViews)
+                    foreach (View targetView in targetViews)
                     {
-                        HashSet<string> appliedDWGs = CopyCategoryOverrides(SourceView, targetView);
+                        HashSet<string> appliedDWGs = CopyCategoryOverrides(document, sourceView, targetView);
                         viewResults[targetView.Name] = appliedDWGs;
                     }
 
                     trans.Commit();
 
                     // Generate detailed report
-                    string report = GenerateReport(viewResults, allDWGsInSource);
-                    OnComplete?.Invoke(report);
+                    report = GenerateReport(viewResults, allDWGsInSource);
                 }
+
+                CompleteRequest(request, true, report);
             }
             catch (Exception ex)
             {
-                OnError?.Invoke($"Error applying settings: {ex.Message}");
+                CompleteRequest(request, false, $"Error applying settings: {ex.Message}");
             }
+        }
+
+        private void CompleteRequest(ApplyToViewsRequest request, bool succeeded, string message)
+        {
+            lock (_requestLock)
+            {
+                if (!ReferenceEquals(_pendingRequest, request))
+                    return;
+
+                _pendingRequest = null;
+            }
+
+            if (succeeded)
+                request.OnComplete?.Invoke(message);
+            else
+                request.OnError?.Invoke(message);
         }
 
         private string GenerateReport(Dictionary<string, HashSet<string>> viewResults, HashSet<string> allDWGsInSource)
@@ -99,14 +189,14 @@ namespace CAD_Manager.Handlers
             return report.ToString().TrimEnd();
         }
 
-        private HashSet<string> CopyCategoryOverrides(View sourceView, View targetView)
+        private HashSet<string> CopyCategoryOverrides(Document document, View sourceView, View targetView)
         {
             // Get all ImportInstance categories from the source view
-            FilteredElementCollector sourceCollector = new FilteredElementCollector(Document, sourceView.Id)
+            FilteredElementCollector sourceCollector = new FilteredElementCollector(document, sourceView.Id)
                 .OfClass(typeof(ImportInstance));
 
             // Get all ImportInstance categories from the target view
-            FilteredElementCollector targetCollector = new FilteredElementCollector(Document, targetView.Id)
+            FilteredElementCollector targetCollector = new FilteredElementCollector(document, targetView.Id)
                 .OfClass(typeof(ImportInstance));
 
             HashSet<ElementId> targetCategoryIds = new HashSet<ElementId>();
@@ -133,7 +223,7 @@ namespace CAD_Manager.Handlers
                         // Copy DWG-level category settings
                         if (processedCategories.Add(dwgCategory.Id))
                         {
-                            CopyCategorySettings(sourceView, targetView, dwgCategory);
+                            CopyCategorySettings(document, sourceView, targetView, dwgCategory);
                             appliedDWGNames.Add(dwgCategory.Name);
                         }
 
@@ -142,7 +232,7 @@ namespace CAD_Manager.Handlers
                         {
                             if (subCategory != null && processedCategories.Add(subCategory.Id))
                             {
-                                CopyCategorySettings(sourceView, targetView, subCategory);
+                                CopyCategorySettings(document, sourceView, targetView, subCategory);
                             }
                         }
                     }
@@ -152,7 +242,7 @@ namespace CAD_Manager.Handlers
             return appliedDWGNames;
         }
 
-        private void CopyCategorySettings(View sourceView, View targetView, Category category)
+        private void CopyCategorySettings(Document document, View sourceView, View targetView, Category category)
         {
             try
             {
@@ -162,7 +252,7 @@ namespace CAD_Manager.Handlers
                 
                 if (templateId != ElementId.InvalidElementId)
                 {
-                    View templateView = Document.GetElement(templateId) as View;
+                    View templateView = document.GetElement(templateId) as View;
                     if (templateView != null)
                     {
                         viewToModify = templateView;
@@ -210,6 +300,29 @@ namespace CAD_Manager.Handlers
         public string GetName()
         {
             return "Apply Settings to Views Handler";
+        }
+
+        private sealed class ApplyToViewsRequest
+        {
+            public ApplyToViewsRequest(
+                Document document,
+                ElementId sourceViewId,
+                List<ElementId> targetViewIds,
+                Action<string> onComplete,
+                Action<string> onError)
+            {
+                Document = document;
+                SourceViewId = sourceViewId;
+                TargetViewIds = targetViewIds;
+                OnComplete = onComplete;
+                OnError = onError;
+            }
+
+            public Document Document { get; }
+            public ElementId SourceViewId { get; }
+            public List<ElementId> TargetViewIds { get; }
+            public Action<string> OnComplete { get; }
+            public Action<string> OnError { get; }
         }
     }
 }

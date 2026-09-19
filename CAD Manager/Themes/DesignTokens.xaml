@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Four-DIP spacing scale. -->
+    <sys:Double x:Key="Space1">4</sys:Double>
+    <sys:Double x:Key="Space2">8</sys:Double>
+    <sys:Double x:Key="Space3">12</sys:Double>
+    <sys:Double x:Key="Space4">16</sys:Double>
+    <sys:Double x:Key="Space5">20</sys:Double>
+    <sys:Double x:Key="Space6">24</sys:Double>
+
+    <Thickness x:Key="ControlPadding">12,0</Thickness>
+    <Thickness x:Key="CompactControlPadding">8,4</Thickness>
+    <Thickness x:Key="WindowContentPadding">20</Thickness>
+    <Thickness x:Key="SectionMargin">0,16,0,0</Thickness>
+
+    <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+    <CornerRadius x:Key="SurfaceCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="WindowCornerRadius">12</CornerRadius>
+
+    <FontFamily x:Key="InterfaceFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="InterfaceDisplayFontFamily">Segoe UI Variable Display, Segoe UI</FontFamily>
+    <sys:Double x:Key="CaptionFontSize">11</sys:Double>
+    <sys:Double x:Key="BodyFontSize">13</sys:Double>
+    <sys:Double x:Key="SectionTitleFontSize">15</sys:Double>
+    <sys:Double x:Key="WindowTitleFontSize">20</sys:Double>
+
+    <sys:Double x:Key="CompactControlHeight">32</sys:Double>
+    <sys:Double x:Key="ControlHeight">32</sys:Double>
+    <sys:Double x:Key="MinimumPointerTarget">32</sys:Double>
+</ResourceDictionary>

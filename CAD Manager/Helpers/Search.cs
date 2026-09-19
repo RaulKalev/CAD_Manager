@@ -40,6 +40,9 @@ namespace CAD_Manager.Helpers
                     LinePattern = dwg.LinePattern,
                     LineWeight = dwg.LineWeight,
                     IsSelected = dwg.IsSelected,
+                    IsVisibilityPending = dwg.IsVisibilityPending,
+                    IsHalftonePending = dwg.IsHalftonePending,
+                    OperationError = dwg.OperationError,
                     Layers = dwg.Layers
                         .Where(layer =>
                             (layer.Name ?? string.Empty).Normalize(NormalizationForm.FormKC)

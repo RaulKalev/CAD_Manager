@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Reflection;
@@ -8,11 +9,16 @@ using CAD_Manager.UI;
 
 namespace CAD_Manager.Services
 {
-    public class ThemeManager
+    public class ThemeManager : IDisposable
     {
         private readonly string _configFilePath;
         private readonly Window _window;
+        private readonly Action<string, bool, bool> _notify;
         private bool _isDarkMode = true;
+        private bool _isPinned;
+        private bool _isDisposed;
+
+        public event EventHandler ThemeResourcesChanged;
 
         public bool IsDarkMode
         {
@@ -20,9 +26,20 @@ namespace CAD_Manager.Services
             set => _isDarkMode = value;
         }
 
+        public bool IsPinned
+        {
+            get => _isPinned;
+            set => _isPinned = value;
+        }
+
+        public bool IsHighContrastActive => SystemParameters.HighContrast;
+
+        public static bool AreAnimationsEnabled => SystemParameters.ClientAreaAnimation;
+
         public class WindowConfig
         {
             public bool IsDarkMode { get; set; } = true;
+            public bool IsPinned { get; set; }
             public double? Left { get; set; }
             public double? Top { get; set; }
             public double? Width { get; set; }
@@ -30,12 +47,14 @@ namespace CAD_Manager.Services
             public string WindowState { get; set; }
         }
 
-        public ThemeManager(Window window)
+        public ThemeManager(Window window, Action<string, bool, bool> notify = null)
         {
             _window = window;
+            _notify = notify;
             _configFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "RK Tools", "CAD Manager", "config.json");
+            SystemParameters.StaticPropertyChanged += SystemParameters_StaticPropertyChanged;
         }
 
         public void LoadTheme()
@@ -45,25 +64,36 @@ namespace CAD_Manager.Services
 
         public void LoadTheme(Window targetWindow)
         {
-            var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
-            var themeUri = _isDarkMode
-                ? $"pack://application:,,,/{assemblyName};component/Themes/DarkTheme.xaml"
-                : $"pack://application:,,,/{assemblyName};component/Themes/LightTheme.xaml";
-
             try
             {
-                var resourceDict = new ResourceDictionary
-                {
-                    Source = new Uri(themeUri, UriKind.Absolute)
-                };
+                var resourceDict = CreateThemeDictionary(_isDarkMode);
 
                 targetWindow.Resources.MergedDictionaries.Clear();
                 targetWindow.Resources.MergedDictionaries.Add(resourceDict);
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Failed to load theme: {ex.Message}\nTheme URI: {themeUri}", "Theme Load Error", MessageBoxButton.OK, MessageBoxImage.Error, _window);
+                Notify($"Failed to load the theme: {ex.Message}", true, false);
             }
+        }
+
+        internal static ResourceDictionary CreateThemeDictionary(bool isDarkMode)
+        {
+            var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+            var themePath = SystemParameters.HighContrast
+                ? "Themes/HighContrastTheme.xaml"
+                : isDarkMode
+                    ? "Themes/DarkTheme.xaml"
+                    : "Themes/LightTheme.xaml";
+            var themeUri = string.Format(
+                "pack://application:,,,/{0};component/{1}",
+                assemblyName,
+                themePath);
+
+            return new ResourceDictionary
+            {
+                Source = new Uri(themeUri, UriKind.Absolute)
+            };
         }
 
         public void SaveThemeState()
@@ -78,6 +108,7 @@ namespace CAD_Manager.Services
                 var config = new WindowConfig
                 {
                     IsDarkMode = _isDarkMode,
+                    IsPinned = _isPinned,
                     Left = bounds.Left,
                     Top = bounds.Top,
                     Width = bounds.Width,
@@ -91,8 +122,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Failed to save window state: {ex.Message}", "Save Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error, _window);
+                Notify($"Failed to save the window state: {ex.Message}", true, false);
             }
         }
 
@@ -123,6 +153,7 @@ namespace CAD_Manager.Services
                 if (cfg != null)
                 {
                     _isDarkMode = cfg.IsDarkMode;
+                    _isPinned = cfg.IsPinned;
 
                     // Restore bounds if present
                     if (cfg.Left.HasValue && cfg.Top.HasValue)
@@ -152,8 +183,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Failed to load window state: {ex.Message}", "Load Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error, _window);
+                Notify($"Failed to load the window state: {ex.Message}", true, false);
             }
         }
 
@@ -174,6 +204,51 @@ namespace CAD_Manager.Services
 
             _window.Left = Math.Max(screenLeft + margin, Math.Min(_window.Left, screenLeft + screenWidth - _window.Width - margin));
             _window.Top = Math.Max(screenTop + margin, Math.Min(_window.Top, screenTop + screenHeight - _window.Height - margin));
+        }
+
+        private void Notify(string message, bool isError, bool autoDismiss)
+        {
+            if (_notify != null)
+            {
+                _notify(message, isError, autoDismiss);
+                return;
+            }
+
+            UniversalPopupWindow.Show(
+                message,
+                isError ? "Error" : "Notification",
+                MessageBoxButton.OK,
+                isError ? MessageBoxImage.Error : MessageBoxImage.Information,
+                _window);
+        }
+
+        private void SystemParameters_StaticPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (_isDisposed || e.PropertyName != nameof(SystemParameters.HighContrast))
+                return;
+
+            Action reloadResources = () =>
+            {
+                if (_isDisposed)
+                    return;
+
+                LoadTheme();
+                ThemeResourcesChanged?.Invoke(this, EventArgs.Empty);
+            };
+
+            if (_window.Dispatcher.CheckAccess())
+                reloadResources();
+            else
+                _window.Dispatcher.BeginInvoke(reloadResources);
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            SystemParameters.StaticPropertyChanged -= SystemParameters_StaticPropertyChanged;
         }
     }
 }

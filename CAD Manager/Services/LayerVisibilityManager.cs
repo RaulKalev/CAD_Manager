@@ -21,13 +21,20 @@ namespace CAD_Manager.Services
         private readonly VisibilityToggler _visibilityToggler;
 
         private readonly Window _owner;
+        private readonly Action<string, bool, bool> _notify;
 
-        public LayerVisibilityManager(Document document, ExternalEvent externalEvent, VisibilityToggler visibilityToggler, Window owner)
+        public LayerVisibilityManager(
+            Document document,
+            ExternalEvent externalEvent,
+            VisibilityToggler visibilityToggler,
+            Window owner,
+            Action<string, bool, bool> notify)
         {
             _document = document;
             _externalEvent = externalEvent;
             _visibilityToggler = visibilityToggler;
             _owner = owner;
+            _notify = notify;
         }
 
         private class LayerVisibilityData
@@ -80,7 +87,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Error accessing save folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
+                Notify($"Error accessing the save folder: {ex.Message}", true, false);
                 return null;
             }
         }
@@ -161,11 +168,11 @@ namespace CAD_Manager.Services
                     File.WriteAllText(filePath, json, Encoding.UTF8);
                 }
 
-                UniversalPopupWindow.Show($"Layer visibility saved to folder:\n{saveFolder}", "Success", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
+                Notify($"Layer visibility saved to {saveFolder}", false, true);
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Error saving layer visibility: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
+                Notify($"Error saving layer visibility: {ex.Message}", true, false);
             }
         }
         public void LoadLayerVisibility(string folderPath, List<DWGNode> dwgNodes)
@@ -174,7 +181,7 @@ namespace CAD_Manager.Services
             {
                 if (!Directory.Exists(folderPath))
                 {
-                    UniversalPopupWindow.Show($"No saved Data found at: {folderPath}", "Info", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
+                    Notify($"No saved data was found at {folderPath}", false, true);
                     return;
                 }
 
@@ -249,11 +256,11 @@ namespace CAD_Manager.Services
                 // If we loaded overrides, we might want to ensure they apply. 
                 // The VisibilityToggler executes DWGVisibilityController, which we will update to handle overrides using the properties we just populated.
 
-                UniversalPopupWindow.Show("Layer visibility and overrides loaded successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
+                Notify("Layer visibility and overrides loaded.", false, true);
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Error loading layer visibility: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
+                Notify($"Error loading layer visibility: {ex.Message}", true, false);
             }
         }
         private string SanitizeFileName(string name)
@@ -284,7 +291,7 @@ namespace CAD_Manager.Services
             }
             catch (Exception ex)
             {
-                UniversalPopupWindow.Show($"Error searching for matching template: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
+                Notify($"Error searching for a matching template: {ex.Message}", true, false);
             }
 
             return null;
@@ -328,6 +335,22 @@ namespace CAD_Manager.Services
             }
 
             return false;
+        }
+
+        private void Notify(string message, bool isError, bool autoDismiss)
+        {
+            if (_notify != null)
+            {
+                _notify(message, isError, autoDismiss);
+                return;
+            }
+
+            UniversalPopupWindow.Show(
+                message,
+                isError ? "Error" : "Notification",
+                MessageBoxButton.OK,
+                isError ? MessageBoxImage.Error : MessageBoxImage.Information,
+                _owner);
         }
 
     }

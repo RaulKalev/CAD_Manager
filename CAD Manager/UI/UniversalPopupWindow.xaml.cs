@@ -2,37 +2,36 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using MaterialDesignThemes.Wpf;
+using CAD_Manager.Services;
 
 namespace CAD_Manager.UI
 {
     public partial class UniversalPopupWindow : Window
     {
-        private MessageBoxResult _result = MessageBoxResult.None;
-
         public UniversalPopupWindow()
         {
             InitializeComponent();
-            _result = MessageBoxResult.Cancel; // Default to Cancel if closed via X
         }
 
-        public MessageBoxResult Result => _result;
-
-        public static MessageBoxResult Show(string message, string title = "Notification", 
+        public static void Show(string message, string title = "Notification",
             MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.Information, Window owner = null)
         {
             // Execute on UI thread
             if (Application.Current != null && Application.Current.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
             {
-                return (MessageBoxResult)Application.Current.Dispatcher.Invoke(new Func<MessageBoxResult>(() => 
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                     Show(message, title, buttons, icon, owner)));
+                return;
             }
 
             var window = new UniversalPopupWindow
             {
                 Owner = owner ?? Application.Current?.MainWindow,
+                Title = title,
                 TitleText = { Text = title },
                 MessageText = { Text = message }
             };
+            window.Loaded += (sender, args) => window.Button3.Focus();
 
             // Explicitly set startup location to CenterOwner if an owner exists
             if (window.Owner != null)
@@ -45,21 +44,20 @@ namespace CAD_Manager.UI
             {
                 case MessageBoxImage.Error:
                     window.MessageIcon.Kind = PackIconKind.Error;
-                    window.MessageIcon.Foreground = System.Windows.Media.Brushes.Red;
+                    window.MessageIcon.Foreground = ResolveBrush(window, "ErrorBrush", System.Windows.Media.Brushes.Red);
                     break;
                 case MessageBoxImage.Warning:
                     window.MessageIcon.Kind = PackIconKind.Alert;
-                    window.MessageIcon.Foreground = System.Windows.Media.Brushes.Orange;
+                    window.MessageIcon.Foreground = ResolveBrush(window, "WarningBrush", System.Windows.Media.Brushes.Orange);
                     break;
                 case MessageBoxImage.Question:
                     window.MessageIcon.Kind = PackIconKind.HelpCircle;
-                    window.MessageIcon.Foreground = System.Windows.Media.Brushes.CornflowerBlue;
+                    window.MessageIcon.Foreground = ResolveBrush(window, "AccentBrush", System.Windows.Media.Brushes.CornflowerBlue);
                     break;
                 case MessageBoxImage.Information:
                 default:
                     window.MessageIcon.Kind = PackIconKind.Information;
-                    window.MessageIcon.Foreground = (System.Windows.Media.Brush)Application.Current?.Resources["AccentBrush"] 
-                        ?? System.Windows.Media.Brushes.DodgerBlue;
+                    window.MessageIcon.Foreground = ResolveBrush(window, "AccentBrush", System.Windows.Media.Brushes.DodgerBlue);
                     break;
             }
 
@@ -68,50 +66,58 @@ namespace CAD_Manager.UI
             {
                 case MessageBoxButton.OK:
                     window.Button3.Visibility = Visibility.Visible;
-                    window.Button3.Content = "OK";
-                    window.Button3.Click += (s, e) => { window._result = MessageBoxResult.OK; window.Close(); };
-                    window.Button3.Click += (s, e) => { window._result = MessageBoxResult.OK; window.Close(); };
+                    window.ConfigureButton(window.Button3, "_OK", "OK");
+                    window.Button3.Click += (s, e) => window.Close();
                     break;
 
                 case MessageBoxButton.OKCancel:
                     window.Button3.Visibility = Visibility.Visible;
-                    window.Button3.Content = "OK";
-                    window.Button3.Click += (s, e) => { window._result = MessageBoxResult.OK; window.Close(); };
-                    window.Button3.Click += (s, e) => { window._result = MessageBoxResult.OK; window.Close(); };
+                    window.ConfigureButton(window.Button3, "_OK", "OK");
+                    window.Button3.Click += (s, e) => window.Close();
 
                     window.Button2.Visibility = Visibility.Visible;
-                    window.Button2.Content = "Cancel";
-                    window.Button2.Click += (s, e) => { window._result = MessageBoxResult.Cancel; window.Close(); };
+                    window.ConfigureButton(window.Button2, "_Cancel", "Cancel");
+                    window.Button2.Click += (s, e) => window.Close();
                     break;
 
                 case MessageBoxButton.YesNo:
                 case MessageBoxButton.YesNoCancel:
                     window.Button3.Visibility = Visibility.Visible;
-                    window.Button3.Content = "Yes";
-                    window.Button3.Click += (s, e) => { window._result = MessageBoxResult.Yes; window.Close(); };
-                    window.Button3.Content = "Yes";
-                    window.Button3.Click += (s, e) => { window._result = MessageBoxResult.Yes; window.Close(); };
+                    window.ConfigureButton(window.Button3, "_Yes", "Yes");
+                    window.Button3.Click += (s, e) => window.Close();
 
                     window.Button2.Visibility = Visibility.Visible;
-                    window.Button2.Content = "No";
-                    window.Button2.Click += (s, e) => { window._result = MessageBoxResult.No; window.Close(); };
+                    window.ConfigureButton(window.Button2, "_No", "No");
+                    window.Button2.Click += (s, e) => window.Close();
 
                     if (buttons == MessageBoxButton.YesNoCancel)
                     {
                         window.Button1.Visibility = Visibility.Visible;
-                        window.Button1.Content = "Cancel";
-                        window.Button1.Click += (s, e) => { window._result = MessageBoxResult.Cancel; window.Close(); };
+                        window.ConfigureButton(window.Button1, "_Cancel", "Cancel");
+                        window.Button1.Click += (s, e) => window.Close();
                     }
                     break;
             }
 
-            window.ShowDialog();
-            return window.Result;
+            window.Show();
+        }
+
+        private void ConfigureButton(System.Windows.Controls.Button button, string content, string accessibleName)
+        {
+            button.Content = content;
+            System.Windows.Automation.AutomationProperties.SetName(button, accessibleName);
+        }
+
+        private static System.Windows.Media.Brush ResolveBrush(
+            FrameworkElement element,
+            string key,
+            System.Windows.Media.Brush fallback)
+        {
+            return element.TryFindResource(key) as System.Windows.Media.Brush ?? fallback;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            _result = MessageBoxResult.Cancel;
             Close();
         }
 
@@ -137,15 +143,12 @@ namespace CAD_Manager.UI
                 resourcesLoaded = true;
             }
 
-            // Fallback: If no resources inherited, load DarkTheme by default
+            // Fallback uses the same theme resolver so Windows High Contrast is honored.
             if (!resourcesLoaded)
             {
                 try
                 {
-                    var assemblyName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-                    var themeUri = $"pack://application:,,,/{assemblyName};component/Themes/DarkTheme.xaml";
-                    var resourceDict = new ResourceDictionary { Source = new Uri(themeUri, UriKind.Absolute) };
-                    this.Resources.MergedDictionaries.Add(resourceDict);
+                    Resources.MergedDictionaries.Add(ThemeManager.CreateThemeDictionary(true));
                 }
                 catch 
                 {

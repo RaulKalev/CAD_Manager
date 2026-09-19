@@ -4,12 +4,13 @@
     <Style TargetType="ToolTip">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="HasDropShadow" Value="True" />
-        <Setter Property="Background" Value="{DynamicResource SecondaryBackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ElevatedSurfaceBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SeparatorBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="8,4" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="{DynamicResource CompactControlPadding}" />
+        <Setter Property="FontFamily" Value="{DynamicResource InterfaceFontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource CaptionFontSize}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToolTip">
@@ -17,13 +18,13 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4"
+                            CornerRadius="{DynamicResource ControlCornerRadius}"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">
                         <Border.Effect>
-                            <DropShadowEffect BlurRadius="10"
+                            <DropShadowEffect BlurRadius="8"
                                               Direction="270"
-                                              Opacity="0.4"
+                                              Opacity="0.18"
                                               ShadowDepth="2" />
                         </Border.Effect>
                         <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Top" />

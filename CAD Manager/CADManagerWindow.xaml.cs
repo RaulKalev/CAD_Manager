@@ -14,6 +14,8 @@ using CAD_Manager.Helpers;
 using CAD_Manager.UI;
 using CAD_Manager.ViewModels;
 using System.Windows.Media;
+using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace CAD_Manager
 {
@@ -32,21 +34,45 @@ namespace CAD_Manager
         private readonly ExternalEvent _halftoneEvent;
         private readonly ApplyToViewsHandler _applyToViewsHandler;
         private readonly ExternalEvent _applyToViewsEvent;
+        private readonly WindowCoordinator _windowCoordinator;
         private readonly CommandButtons _commandButtons;
         private readonly TreeViewControls _treeViewControls;
-        private readonly WindowResizer _windowResizer;
         private readonly ColorOverrideHandler _colorOverrideHandler;
         private readonly ExternalEvent _colorOverrideEvent;
+        private readonly LineGraphicsReadHandler _lineGraphicsReadHandler;
+        private readonly ExternalEvent _lineGraphicsReadEvent;
         private readonly ThemeManager _themeManager;
+        private ApplyToViewsWindow _applyToViewsWindow;
+        private LineGraphicsWindow _lineGraphicsWindow;
+        private LineGraphicsSession _lineGraphicsSession;
+        private bool _applyToViewsPending;
+        private bool _suppressTreeOperationEvents;
+        private HwndSource _windowSource;
+        private bool _allowExplicitMinimize;
+        private DispatcherTimer _statusTimer;
+        private bool _notificationVisible;
+        private string _contextSummary = "Active view  ·  No selection";
+
+        private const int WmKeyDown = 0x0100;
+        private const int WmSysKeyDown = 0x0104;
+        private const int EscapeVirtualKey = 0x1B;
 
         public CADManagerWindow(List<DWGNode> dwgNodes, UIDocument uiDoc)
         {
+            // The window XAML derives local styles from theme resources while it
+            // is being parsed. AppLoader does not provide an App.xaml resource
+            // dictionary, so install a bootstrap theme before InitializeComponent.
+            if (Application.ResourceAssembly == null)
+            {
+                Application.ResourceAssembly = Assembly.GetExecutingAssembly();
+            }
+
+            Resources.MergedDictionaries.Add(ThemeManager.CreateThemeDictionary(true));
             InitializeComponent();
 
             DWGNodes = dwgNodes;
             _uiDoc = uiDoc;
             BuildLayerParentLookup();
-            Topmost = true;
 
             _visibilityToggler = new VisibilityToggler
             {
@@ -56,10 +82,13 @@ namespace CAD_Manager
             };
 
             _externalEvent = ExternalEvent.Create(_visibilityToggler);
-            _treeViewControls = new TreeViewControls(_externalEvent, DWGNodes);
+            _treeViewControls = new TreeViewControls();
 
             _colorOverrideHandler = new ColorOverrideHandler();
             _colorOverrideEvent = ExternalEvent.Create(_colorOverrideHandler);
+
+            _lineGraphicsReadHandler = new LineGraphicsReadHandler();
+            _lineGraphicsReadEvent = ExternalEvent.Create(_lineGraphicsReadHandler);
 
             _halftoneHandler = new HalftoneHandler
             {
@@ -68,19 +97,24 @@ namespace CAD_Manager
             };
             _halftoneEvent = ExternalEvent.Create(_halftoneHandler);
 
-            _applyToViewsHandler = new ApplyToViewsHandler
-            {
-                Document = _uiDoc.Document
-            };
+            _applyToViewsHandler = new ApplyToViewsHandler();
             _applyToViewsEvent = ExternalEvent.Create(_applyToViewsHandler);
 
-            _themeManager = new ThemeManager(this);
+            _themeManager = new ThemeManager(this, ShowStatus);
+            _windowCoordinator = new WindowCoordinator(this);
+            _themeManager.ThemeResourcesChanged += ThemeManager_ThemeResourcesChanged;
 
             _treeViewControls.SortDWGs(DWGNodes);
 
             FilteredDWGNodes = DWGNodes;
 
-            _commandButtons = new CommandButtons(_uiDoc, _externalEvent, _visibilityToggler, RefreshTreeView, this);
+            _commandButtons = new CommandButtons(
+                _uiDoc,
+                _externalEvent,
+                _visibilityToggler,
+                RefreshTreeView,
+                this,
+                ShowStatus);
 
             DWGTreeView.ItemsSource = FilteredDWGNodes;
             DWGTreeView.PreviewMouseLeftButtonDown += TreeView_PreviewMouseLeftButtonDown;
@@ -91,28 +125,18 @@ namespace CAD_Manager
 
             DWGTreeView.Loaded += (s, e) => _treeViewControls.ExpandAllNodes(DWGNodes);
 
-            _windowResizer = new WindowResizer(this);
-
-            // Global mouse events for resizing
-            this.MouseMove += Window_MouseMove;
-            this.MouseLeftButtonUp += Window_MouseLeftButtonUp;
-
-            if (Application.ResourceAssembly == null)
-            {
-                Application.ResourceAssembly = Assembly.GetExecutingAssembly();
-            }
-
             _themeManager.LoadThemeState();
             ThemeToggleButton.IsChecked = _themeManager.IsDarkMode;
+            PinToggleButton.IsChecked = _themeManager.IsPinned;
+            Topmost = _themeManager.IsPinned;
             _themeManager.LoadTheme();
 
             // Set initial icon state
-            if (ThemeToggleButton.Template.FindName("ThemeToggleIcon", ThemeToggleButton) is MaterialDesignThemes.Wpf.PackIcon themeIcon)
-            {
-                themeIcon.Kind = _themeManager.IsDarkMode
-                    ? MaterialDesignThemes.Wpf.PackIconKind.ToggleSwitchOffOutline
-                    : MaterialDesignThemes.Wpf.PackIconKind.ToggleSwitchOutline;
-            }
+            ThemeToggleIcon.Kind = _themeManager.IsDarkMode
+                ? MaterialDesignThemes.Wpf.PackIconKind.WeatherNight
+                : MaterialDesignThemes.Wpf.PackIconKind.WhiteBalanceSunny;
+            UpdatePinIcon();
+            UpdateContextSummary();
 
             this.Focusable = true;
             this.Focus();
@@ -125,30 +149,145 @@ namespace CAD_Manager
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            UpdateMaximizedState();
             this.Focus();
             Keyboard.Focus(this);
+
+            _windowSource = PresentationSource.FromVisual(this) as HwndSource;
+            if (_windowSource != null)
+                _windowSource.AddHook(WindowHwndHook);
+        }
+
+        private IntPtr WindowHwndHook(
+            IntPtr hwnd,
+            int message,
+            IntPtr wParam,
+            IntPtr lParam,
+            ref bool handled)
+        {
+            if ((message == WmKeyDown || message == WmSysKeyDown)
+                && wParam.ToInt64() == EscapeVirtualKey)
+            {
+                HandleEscapeKey();
+                handled = true;
+            }
+
+            return IntPtr.Zero;
+        }
+
+        private void HandleEscapeKey()
+        {
+            ClearTreeViewSelection();
+            if (SearchBox != null)
+                SearchBox.Text = string.Empty;
+        }
+
+        private void MinimizeWindow_Click(object sender, RoutedEventArgs e)
+        {
+            _allowExplicitMinimize = true;
+            SystemCommands.MinimizeWindow(this);
+        }
+
+        private void MaximizeWindow_Click(object sender, RoutedEventArgs e)
+        {
+            if (WindowState == System.Windows.WindowState.Maximized)
+                SystemCommands.RestoreWindow(this);
+            else
+                SystemCommands.MaximizeWindow(this);
+        }
+
+        private void CloseWindow_Click(object sender, RoutedEventArgs e)
+        {
+            SystemCommands.CloseWindow(this);
+        }
+
+        private void Window_StateChanged(object sender, System.EventArgs e)
+        {
+            if (WindowState == System.Windows.WindowState.Minimized && !_allowExplicitMinimize)
+            {
+                WindowState = System.Windows.WindowState.Normal;
+                return;
+            }
+
+            if (WindowState != System.Windows.WindowState.Minimized)
+                _allowExplicitMinimize = false;
+
+            UpdateMaximizedState();
+        }
+
+        private void UpdateMaximizedState()
+        {
+            bool isMaximized = WindowState == System.Windows.WindowState.Maximized;
+            Thickness frame = SystemParameters.WindowResizeBorderThickness;
+            RootGrid.Margin = isMaximized
+                ? new Thickness(frame.Left + 4, frame.Top + 4, frame.Right + 4, frame.Bottom + 4)
+                : new Thickness(0);
+
+            MaximizeIcon.Kind = isMaximized
+                ? MaterialDesignThemes.Wpf.PackIconKind.WindowRestore
+                : MaterialDesignThemes.Wpf.PackIconKind.WindowMaximize;
+            MaximizeButton.ToolTip = isMaximized ? "Restore down" : "Maximize";
+            System.Windows.Automation.AutomationProperties.SetName(
+                MaximizeButton,
+                isMaximized ? "Restore CAD Manager" : "Maximize CAD Manager");
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape)
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt) && e.SystemKey == Key.F)
             {
-                ClearTreeViewSelection();
-                SearchBox.Text = string.Empty;
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+                e.Handled = true;
+                return;
             }
+
         }
 
         private void ToggleTheme_Click(object sender, RoutedEventArgs e)
         {
             _themeManager.IsDarkMode = ThemeToggleButton.IsChecked == true;
             _themeManager.LoadTheme();
+            _windowCoordinator.ApplyToOpenWindows(_themeManager.LoadTheme);
 
-            if (ThemeToggleButton.Template.FindName("ThemeToggleIcon", ThemeToggleButton) is MaterialDesignThemes.Wpf.PackIcon themeIcon)
-            {
-                themeIcon.Kind = _themeManager.IsDarkMode
-                    ? MaterialDesignThemes.Wpf.PackIconKind.ToggleSwitchOffOutline
-                    : MaterialDesignThemes.Wpf.PackIconKind.ToggleSwitchOutline;
-            }
+            ThemeToggleIcon.Kind = _themeManager.IsDarkMode
+                ? MaterialDesignThemes.Wpf.PackIconKind.WeatherNight
+                : MaterialDesignThemes.Wpf.PackIconKind.WhiteBalanceSunny;
+
+            if (_themeManager.IsHighContrastActive)
+                ShowStatus("Windows High Contrast is active. CAD Manager will keep using the system contrast palette.", false, true);
+        }
+
+        private void ThemeManager_ThemeResourcesChanged(object sender, System.EventArgs e)
+        {
+            _windowCoordinator.ApplyToOpenWindows(_themeManager.LoadTheme);
+            ShowStatus(
+                _themeManager.IsHighContrastActive
+                    ? "Windows High Contrast palette enabled."
+                    : "Windows High Contrast palette disabled.",
+                false,
+                true);
+        }
+
+        private void TogglePin_Click(object sender, RoutedEventArgs e)
+        {
+            bool isPinned = PinToggleButton.IsChecked == true;
+            Topmost = isPinned;
+            _themeManager.IsPinned = isPinned;
+            UpdatePinIcon();
+            _themeManager.SaveThemeState();
+        }
+
+        private void ShowShortcuts_Click(object sender, RoutedEventArgs e)
+        {
+            ShowStatus("Tree shortcuts: Ctrl-click adds or removes rows; Shift-click selects a range; Ctrl+A selects the current DWG’s layers; Esc clears selection and search.", false, false);
+        }
+
+        private void UpdatePinIcon()
+        {
+            PinToggleIcon.Kind = Topmost
+                ? MaterialDesignThemes.Wpf.PackIconKind.Pin
+                : MaterialDesignThemes.Wpf.PackIconKind.PinOutline;
         }
 
         private void DisableFileButtons()
@@ -178,17 +317,29 @@ namespace CAD_Manager
 
         private void Window1_Closed(object sender, System.EventArgs e)
         {
+            if (_windowSource != null)
+            {
+                _windowSource.RemoveHook(WindowHwndHook);
+                _windowSource = null;
+            }
+
             _themeManager.SaveThemeState();
+            _themeManager.ThemeResourcesChanged -= ThemeManager_ThemeResourcesChanged;
+            _themeManager.Dispose();
 
             DWGTreeView.PreviewMouseLeftButtonDown -= TreeView_PreviewMouseLeftButtonDown;
-            this.MouseMove -= Window_MouseMove;
-            this.MouseLeftButtonUp -= Window_MouseLeftButtonUp;
             DWGTreeView.Loaded -= (s, args) => _treeViewControls.ExpandAllNodes(DWGNodes);
 
+            _visibilityToggler?.CancelPendingRequest();
             _externalEvent?.Dispose();
             _colorOverrideEvent?.Dispose();
+            _lineGraphicsReadEvent?.Dispose();
+            _halftoneHandler?.CancelPendingRequest();
             _halftoneEvent?.Dispose();
-
+            _applyToViewsEvent?.Dispose();
+            _windowCoordinator?.Dispose();
+            _statusTimer?.Stop();
+            _statusTimer = null;
             _visibilityToggler.DWGNodes = null;
             _visibilityToggler.Document = null;
             _visibilityToggler.CurrentView = null;
@@ -198,97 +349,222 @@ namespace CAD_Manager
             DWGTreeView.ItemsSource = null;
         }
 
-        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                this.DragMove();
-            }
-        }
-
         private void ClearButton_Click(object sender, RoutedEventArgs e) => Search.ClearSearchBox(SearchBox);
-        
+
         private void CheckBox_Toggled(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox)
+            if (_suppressTreeOperationEvents || !(sender is CheckBox checkBox))
+                return;
+
+            List<TreeVisibilityChange> changes;
+            _suppressTreeOperationEvents = true;
+            try
             {
-                _treeViewControls.HandleCheckBoxToggled(checkBox, DWGTreeView, FilteredDWGNodes);
-                
-                if (checkBox.DataContext is DWGNode dwgNode)
-                {
-                    // Sync ALL selected nodes if the clicked node is part of a selection
-                     if (dwgNode.IsSelected)
-                    {
-                        var selectedNodes = FilteredDWGNodes.Where(n => n.IsSelected).ToList();
-                        foreach (var selected in selectedNodes)
-                        {
-                            SyncFilteredNodeToOriginal(selected);
-                        }
-                    }
-                    else
-                    {
-                        // Just sync the clicked node
-                         SyncFilteredNodeToOriginal(dwgNode);
-                    }
-                }
-                else if (checkBox.DataContext is LayerNode layerNode)
-                {
-                    // Sync ALL selected layers if the clicked layer is part of a selection
-                    if (layerNode.IsSelected)
-                    {
-                         var selectedLayers = FilteredDWGNodes.SelectMany(d => d.Layers).Where(l => l.IsSelected).ToList();
-                         foreach(var selected in selectedLayers)
-                         {
-                             // We need to find the parent DWG for the layer to sync properly if needed,
-                             // but SyncFilteredNodeToOriginal works on DWGNodes.
-                             // Layer properties are reference types within DWGNodes, so modifying the LayerNode object
-                             // in the filtered list *might* update the original if they share reference,
-                             // BUT Search.cs creates NEW LayerNode objects.
-                             // We must find the original LayerNode and update it.
-                             
-                             SyncFilteredLayerToOriginal(selected);
-                         }
-                    }
-                    else
-                    {
-                        SyncFilteredLayerToOriginal(layerNode);
-                    }
-                }
+                changes = _treeViewControls.PrepareVisibilityChanges(checkBox, FilteredDWGNodes);
+            }
+            finally
+            {
+                _suppressTreeOperationEvents = false;
+            }
+
+            if (changes.Count == 0)
+                return;
+
+            List<VisibilityChangeTarget> targets = BuildVisibilityTargets(changes);
+            if (targets.Count != changes.Count)
+            {
+                CompleteVisibilityChanges(changes, false, "The selected DWG context could not be resolved. Refresh and try again.");
+                return;
+            }
+
+            SetVisibilityPending(changes, true, null);
+            Document document = _uiDoc?.Document;
+            View view = document?.ActiveView;
+            bool submitted = _visibilityToggler.TrySubmit(
+                document,
+                view?.Id,
+                targets,
+                message => CompleteVisibilityChanges(changes, true, message),
+                message => CompleteVisibilityChanges(changes, false, message));
+
+            if (!submitted)
+            {
+                CompleteVisibilityChanges(changes, false, "Another visibility update is already pending in Revit.");
+                return;
+            }
+
+            ExternalEventRequest raiseResult = _externalEvent.Raise();
+            if (raiseResult != ExternalEventRequest.Accepted)
+            {
+                _visibilityToggler.CancelPendingRequest();
+                CompleteVisibilityChanges(changes, false, "Revit could not queue the visibility update. Try again when Revit is idle.");
             }
         }
 
         private void Halftone_Toggled(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.Primitives.ToggleButton toggleButton && toggleButton.DataContext is DWGNode clickedNode)
+            if (_suppressTreeOperationEvents ||
+                !(sender is System.Windows.Controls.Primitives.ToggleButton toggleButton) ||
+                !(toggleButton.DataContext is DWGNode clickedNode))
             {
-                // The IsHalftone property of the clickedNode is already updated by binding (TwoWay)
-                bool newState = clickedNode.IsHalftone;
-                var nodesToUpdate = new List<DWGNode>();
-
-                // Check if the clicked node is part of the current selection
-                if (clickedNode.IsSelected)
-                {
-                    // Apply to all selected DWG nodes
-                    // Use FilteredDWGNodes to ensure we capture selection from the active view list
-                    var selectedNodes = FilteredDWGNodes.Where(n => n.IsSelected).ToList();
-                    foreach (var node in selectedNodes)
-                    {
-                        if (node != clickedNode)
-                        {
-                            node.IsHalftone = newState;
-                        }
-                    }
-                    nodesToUpdate.AddRange(selectedNodes);
-                }
-                else
-                {
-                    // Apply only to the clicked node
-                    nodesToUpdate.Add(clickedNode);
-                }
-                
-                _halftoneHandler.DWGNodes = nodesToUpdate;
-                _halftoneEvent.Raise();
+                return;
             }
+
+            bool newState = toggleButton.IsChecked == true;
+            List<DWGNode> nodes = clickedNode.IsSelected
+                ? FilteredDWGNodes.Where(node => node.IsSelected).ToList()
+                : new List<DWGNode> { clickedNode };
+            List<HalftoneUiChange> changes = nodes
+                .Select(node => new HalftoneUiChange(
+                    node,
+                    ReferenceEquals(node, clickedNode) ? !newState : node.IsHalftone,
+                    newState))
+                .ToList();
+
+            _suppressTreeOperationEvents = true;
+            try
+            {
+                foreach (HalftoneUiChange change in changes)
+                {
+                    change.Node.IsHalftone = change.NewValue;
+                    change.Node.IsHalftonePending = true;
+                    change.Node.OperationError = null;
+                    SyncFilteredNodeToOriginal(change.Node);
+                }
+            }
+            finally
+            {
+                _suppressTreeOperationEvents = false;
+            }
+
+            Document document = _uiDoc?.Document;
+            View view = document?.ActiveView;
+            List<HalftoneChangeTarget> targets = changes
+                .Where(change => change.Node.ElementId != null)
+                .Select(change => new HalftoneChangeTarget(change.Node.ElementId, change.NewValue))
+                .ToList();
+
+            if (targets.Count != changes.Count)
+            {
+                CompleteHalftoneChanges(changes, false, "The selected DWG context could not be resolved. Refresh and try again.");
+                return;
+            }
+
+            bool submitted = _halftoneHandler.TrySubmit(
+                document,
+                view?.Id,
+                targets,
+                message => CompleteHalftoneChanges(changes, true, message),
+                message => CompleteHalftoneChanges(changes, false, message));
+
+            if (!submitted)
+            {
+                CompleteHalftoneChanges(changes, false, "Another halftone update is already pending in Revit.");
+                return;
+            }
+
+            ExternalEventRequest raiseResult = _halftoneEvent.Raise();
+            if (raiseResult != ExternalEventRequest.Accepted)
+            {
+                _halftoneHandler.CancelPendingRequest();
+                CompleteHalftoneChanges(changes, false, "Revit could not queue the halftone update. Try again when Revit is idle.");
+            }
+        }
+
+        private List<VisibilityChangeTarget> BuildVisibilityTargets(IEnumerable<TreeVisibilityChange> changes)
+        {
+            List<VisibilityChangeTarget> targets = new List<VisibilityChangeTarget>();
+            foreach (TreeVisibilityChange change in changes)
+            {
+                if (change.Node is DWGNode dwgNode && dwgNode.ElementId != null)
+                {
+                    targets.Add(new VisibilityChangeTarget(dwgNode.ElementId, null, change.NewValue));
+                }
+                else if (change.Node is LayerNode layerNode)
+                {
+                    DWGNode parent = FindParentDWGNode(layerNode);
+                    if (parent?.ElementId != null)
+                        targets.Add(new VisibilityChangeTarget(parent.ElementId, layerNode.Name, change.NewValue));
+                }
+            }
+            return targets;
+        }
+
+        private void SetVisibilityPending(
+            IEnumerable<TreeVisibilityChange> changes,
+            bool isPending,
+            string error)
+        {
+            foreach (TreeVisibilityChange change in changes)
+            {
+                if (change.Node is DWGNode dwgNode)
+                {
+                    dwgNode.IsVisibilityPending = isPending;
+                    dwgNode.OperationError = error;
+                    SyncFilteredNodeToOriginal(dwgNode);
+                }
+                else if (change.Node is LayerNode layerNode)
+                {
+                    layerNode.IsVisibilityPending = isPending;
+                    layerNode.OperationError = error;
+                    SyncFilteredLayerToOriginal(layerNode);
+                }
+            }
+        }
+
+        private void CompleteVisibilityChanges(
+            List<TreeVisibilityChange> changes,
+            bool succeeded,
+            string message)
+        {
+            _suppressTreeOperationEvents = true;
+            try
+            {
+                if (!succeeded)
+                {
+                    foreach (TreeVisibilityChange change in changes)
+                    {
+                        if (change.Node is DWGNode dwgNode)
+                            dwgNode.IsChecked = change.PreviousValue;
+                        else if (change.Node is LayerNode layerNode)
+                            layerNode.IsChecked = change.PreviousValue;
+                    }
+                }
+
+                SetVisibilityPending(changes, false, succeeded ? null : message);
+            }
+            finally
+            {
+                _suppressTreeOperationEvents = false;
+            }
+
+            ShowStatus(message, !succeeded, succeeded);
+        }
+
+        private void CompleteHalftoneChanges(
+            List<HalftoneUiChange> changes,
+            bool succeeded,
+            string message)
+        {
+            _suppressTreeOperationEvents = true;
+            try
+            {
+                foreach (HalftoneUiChange change in changes)
+                {
+                    if (!succeeded)
+                        change.Node.IsHalftone = change.PreviousValue;
+
+                    change.Node.IsHalftonePending = false;
+                    change.Node.OperationError = succeeded ? null : message;
+                    SyncFilteredNodeToOriginal(change.Node);
+                }
+            }
+            finally
+            {
+                _suppressTreeOperationEvents = false;
+            }
+
+            ShowStatus(message, !succeeded, succeeded);
         }
         
         private void SyncFilteredNodeToOriginal(DWGNode filteredNode)
@@ -307,6 +583,9 @@ namespace CAD_Manager
                 original.LinePattern = filteredNode.LinePattern;
                 original.LineWeight = filteredNode.LineWeight;
                 original.IsSelected = filteredNode.IsSelected;
+                original.IsVisibilityPending = filteredNode.IsVisibilityPending;
+                original.IsHalftonePending = filteredNode.IsHalftonePending;
+                original.OperationError = filteredNode.OperationError;
                 
                 // Note: Layers are separate objects in the clone, but we handle them specifically in SyncFilteredLayerToOriginal
             }
@@ -333,12 +612,11 @@ namespace CAD_Manager
                      originalLayer.LinePattern = filteredLayer.LinePattern;
                      originalLayer.LineWeight = filteredLayer.LineWeight;
                      originalLayer.IsSelected = filteredLayer.IsSelected;
+                     originalLayer.IsVisibilityPending = filteredLayer.IsVisibilityPending;
+                     originalLayer.OperationError = filteredLayer.OperationError;
                  }
             }
         }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
-        private void MinimizeButton_Click(object sender, RoutedEventArgs e) => this.WindowState = System.Windows.WindowState.Minimized;
 
         private void SearchBox_GotFocus(object sender, RoutedEventArgs e) => Search.HandleSearchBoxGotFocus(SearchBox);
         private void SearchBox_LostFocus(object sender, RoutedEventArgs e) => Search.HandleSearchBoxLostFocus(SearchBox);
@@ -347,22 +625,8 @@ namespace CAD_Manager
         {
             _treeViewControls.RefreshTreeView(DWGTreeView, FilteredDWGNodes);
             BuildLayerParentLookup();
+            UpdateContextSummary();
         }
-
-        private void LeftEdge_MouseEnter(object sender, MouseEventArgs e) => this.Cursor = Cursors.SizeWE;
-        private void RightEdge_MouseEnter(object sender, MouseEventArgs e) => this.Cursor = Cursors.SizeWE;
-        private void BottomEdge_MouseEnter(object sender, MouseEventArgs e) => this.Cursor = Cursors.SizeNS;
-        private void Edge_MouseLeave(object sender, MouseEventArgs e) => this.Cursor = Cursors.Arrow;
-        private void BottomLeftCorner_MouseEnter(object sender, MouseEventArgs e) => this.Cursor = Cursors.SizeNESW;
-        private void BottomRightCorner_MouseEnter(object sender, MouseEventArgs e) => this.Cursor = Cursors.SizeNWSE;
-        
-        private void Window_MouseMove(object sender, MouseEventArgs e) => _windowResizer.ResizeWindow(e);
-        private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => _windowResizer.StopResizing();
-        private void LeftEdge_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _windowResizer.StartResizing(e, ResizeDirection.Left);
-        private void RightEdge_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _windowResizer.StartResizing(e, ResizeDirection.Right);
-        private void BottomEdge_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _windowResizer.StartResizing(e, ResizeDirection.Bottom);
-        private void BottomLeftCorner_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _windowResizer.StartResizing(e, ResizeDirection.BottomLeft);
-        private void BottomRightCorner_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>_windowResizer.StartResizing(e, ResizeDirection.BottomRight);
         
         private void LoadButton_Click(object sender, RoutedEventArgs e) => _commandButtons.LoadButton_Click(sender, e);
         private void SaveButton_Click(object sender, RoutedEventArgs e) => _commandButtons.SaveButton_Click(sender, e);
@@ -372,191 +636,368 @@ namespace CAD_Manager
 
         private void ApplyToViewsButton_Click(object sender, RoutedEventArgs e)
         {
-            var applyWindow = new UI.ApplyToViewsWindow(_uiDoc.Document, _uiDoc.Document.ActiveView);
-            applyWindow.Owner = this;
-            
-            if (applyWindow.ShowDialog() == true && applyWindow.SelectedViews != null && applyWindow.SelectedViews.Count > 0)
+            if (_applyToViewsPending && (_applyToViewsWindow == null || !_applyToViewsWindow.IsVisible))
             {
-                // Set up the handler with the selected views
-                _applyToViewsHandler.SourceView = _uiDoc.Document.ActiveView;
-                _applyToViewsHandler.TargetViews = applyWindow.SelectedViews;
-                _applyToViewsHandler.OnComplete = (message) =>
-                {
-                    UniversalPopupWindow.Show(message, "Apply to Views", MessageBoxButton.OK, MessageBoxImage.Information, this);
-                };
-                _applyToViewsHandler.OnError = (message) =>
-                {
-                    UniversalPopupWindow.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Error, this);
-                };
-                
-                // Raise the external event
-                _applyToViewsEvent.Raise();
+                ShowStatus("Apply to Views is already processing a request.", false);
+                return;
             }
+
+            Document document = _uiDoc?.Document;
+            View sourceView = document?.ActiveView;
+            if (document == null || sourceView == null)
+            {
+                ShowStatus("Apply to Views is unavailable because there is no active document or view.", true);
+                return;
+            }
+
+            _applyToViewsWindow = _windowCoordinator.ShowOrActivate(
+                "ApplyToViews",
+                () => new ApplyToViewsWindow(document, sourceView),
+                window =>
+                {
+                    window.ApplyRequested += ApplyToViewsWindow_ApplyRequested;
+                    window.Closed += ApplyToViewsWindow_Closed;
+                });
+        }
+
+        private void ApplyToViewsWindow_ApplyRequested(object sender, ApplyToViewsRequestedEventArgs e)
+        {
+            if (_applyToViewsPending)
+            {
+                _applyToViewsWindow?.SetRequestState(true, "An Apply to Views request is already pending.");
+                return;
+            }
+
+            bool submitted = _applyToViewsHandler.TrySubmit(
+                e.Document,
+                e.SourceViewId,
+                e.TargetViewIds,
+                ApplyToViewsCompleted,
+                ApplyToViewsFailed);
+
+            if (!submitted)
+            {
+                _applyToViewsWindow?.SetRequestState(false, "The request could not be queued. Check the selected views and try again.", true);
+                return;
+            }
+
+            _applyToViewsPending = true;
+            _applyToViewsWindow?.SetRequestState(true, "Applying settings in Revit…");
+            ShowStatus("Applying settings to selected views…", false);
+
+            ExternalEventRequest raiseResult = _applyToViewsEvent.Raise();
+            if (raiseResult != ExternalEventRequest.Accepted)
+            {
+                _applyToViewsHandler.CancelPendingRequest();
+                _applyToViewsPending = false;
+                string message = "Revit could not queue Apply to Views. Try again when Revit is idle.";
+                _applyToViewsWindow?.SetRequestState(false, message, true);
+                ShowStatus(message, true);
+            }
+        }
+
+        private void ApplyToViewsCompleted(string report)
+        {
+            _applyToViewsPending = false;
+            _applyToViewsWindow?.SetRequestState(false, report);
+            ShowStatus("Settings were applied to the selected views.", false, true);
+        }
+
+        private void ApplyToViewsFailed(string message)
+        {
+            _applyToViewsPending = false;
+            _applyToViewsWindow?.SetRequestState(false, message, true);
+            ShowStatus(message, true);
+        }
+
+        private void ApplyToViewsWindow_Closed(object sender, EventArgs e)
+        {
+            if (sender is ApplyToViewsWindow window)
+            {
+                window.ApplyRequested -= ApplyToViewsWindow_ApplyRequested;
+                window.Closed -= ApplyToViewsWindow_Closed;
+            }
+
+            _applyToViewsWindow = null;
+        }
+
+        private void ShowStatus(string message, bool isError, bool autoDismiss = false)
+        {
+            // Keep the existing call signature for command callbacks, but present
+            // each notification in the single-line footer for a predictable 15 seconds.
+            _statusTimer?.Stop();
+            _notificationVisible = true;
+            StatusText.Text = isError ? $"Error: {message}" : message;
+            string brushKey = isError ? "ErrorBrush" : "ForegroundBrush";
+            StatusText.Foreground = (System.Windows.Media.Brush)(TryFindResource(brushKey)
+                ?? System.Windows.Media.Brushes.Black);
+            StatusBorder.Visibility = System.Windows.Visibility.Visible;
+
+            _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+            _statusTimer.Tick += (timerSender, timerArgs) => RestoreContextSummary();
+            _statusTimer.Start();
+        }
+
+        private void RestoreContextSummary()
+        {
+            _statusTimer?.Stop();
+            _statusTimer = null;
+            _notificationVisible = false;
+            StatusText.Text = _contextSummary;
+            StatusText.Foreground = (System.Windows.Media.Brush)(TryFindResource("ForegroundBrush")
+                ?? System.Windows.Media.Brushes.Black);
+            StatusBorder.Visibility = System.Windows.Visibility.Visible;
         }
 
         private void TreeViewItem_EditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.Button button && button.Tag is object node)
+            if (!(sender is System.Windows.Controls.Button button) || button.Tag == null)
+                return;
+
+            LineGraphicsSession session = CreateLineGraphicsSession(button.Tag);
+            if (session == null)
             {
-                    if (node is DWGNode clickedDwgNode && clickedDwgNode.ElementId != null)
-                    {
-                        var nodesToUpdate = new List<DWGNode>();
-
-                        // Check if the clicked node is part of the current selection
-                        if (clickedDwgNode.IsSelected)
-                        {
-                            // Apply to all selected DWG nodes
-                            // Use FilteredDWGNodes to ensure we capture selection from the active view list
-                            nodesToUpdate.AddRange(FilteredDWGNodes.Where(n => n.IsSelected && n.ElementId != null));
-                        }
-                        else
-                        {
-                            // Apply only to the clicked node
-                            nodesToUpdate.Add(clickedDwgNode);
-                        }
-
-                        // Open window with current state
-                        var lineGraphicsWindow = new UI.LineGraphicsWindow(_themeManager, nodesToUpdate, _uiDoc, false)
-                        {
-                            Owner = this
-                        };
-
-                        if (lineGraphicsWindow.ShowDialog() != true)
-                            return;
-
-                        _colorOverrideHandler.DWGNodes = nodesToUpdate;
-                        _colorOverrideHandler.OverrideColor = lineGraphicsWindow.SelectedColor;
-                        _colorOverrideHandler.LinePattern = lineGraphicsWindow.SelectedPattern;
-                        _colorOverrideHandler.LineWeight = lineGraphicsWindow.SelectedWeight;
-                        _colorOverrideHandler.ClearOverrides = lineGraphicsWindow.ClearOverridesRequested;
-                        _colorOverrideHandler.IsLayerOverride = false;
-                        _colorOverrideEvent.Raise();
-
-                        // Sync local model to prevent reversion on subsequent visibility toggles
-                        foreach(var dwgNode in nodesToUpdate) 
-                        {
-                            if (lineGraphicsWindow.ClearOverridesRequested)
-                            {
-                                dwgNode.LineColor = null;
-                                dwgNode.LinePattern = null;
-                                dwgNode.LineWeight = null;
-                            }
-                            else
-                            {
-                                if (lineGraphicsWindow.SelectedColor != null)
-                                {
-                                    dwgNode.LineColor = $"#{lineGraphicsWindow.SelectedColor.Red:X2}{lineGraphicsWindow.SelectedColor.Green:X2}{lineGraphicsWindow.SelectedColor.Blue:X2}";
-                                }
-                                if (lineGraphicsWindow.SelectedPattern != null)
-                                {
-                                    dwgNode.LinePattern = lineGraphicsWindow.SelectedPattern;
-                                }
-                                if (lineGraphicsWindow.SelectedWeight.HasValue)
-                                {
-                                     if (lineGraphicsWindow.SelectedWeight.Value == -1) 
-                                         dwgNode.LineWeight = null;
-                                     else 
-                                         dwgNode.LineWeight = lineGraphicsWindow.SelectedWeight.Value;
-                                }
-                            }
-                            SyncFilteredNodeToOriginal(dwgNode);
-                        }
-                    }
-                    else if (node is LayerNode clickedLayerNode)
-                    {
-                        var layersToUpdate = new List<LayerNode>();
-
-                        // Check if the clicked layer is part of the current selection
-                        if (clickedLayerNode.IsSelected)
-                        {
-                            // Apply to all selected Layer nodes
-                            // Use FilteredDWGNodes to ensure we capture selection from the active view list
-                            layersToUpdate.AddRange(FilteredDWGNodes.SelectMany(dwg => dwg.Layers).Where(l => l.IsSelected));
-                        }
-                        else
-                        {
-                            // Apply only to the clicked layer
-                            layersToUpdate.Add(clickedLayerNode);
-                        }
-
-                        // Group layers by their parent DWG
-                        var layersByDwg = new Dictionary<DWGNode, List<LayerNode>>();
-                        foreach (var layer in layersToUpdate)
-                        {
-                            var parentDWGNode = FindParentDWGNode(layer);
-                            if (parentDWGNode != null && parentDWGNode.ElementId != null)
-                            {
-                                if (!layersByDwg.ContainsKey(parentDWGNode))
-                                {
-                                    layersByDwg[parentDWGNode] = new List<LayerNode>();
-                                }
-                                layersByDwg[parentDWGNode].Add(layer);
-                            }
-                        }
-
-                        // Create DWGNode wrappers for each parent with its selected layers
-                        var dwgNodesToUpdate = layersByDwg.Select(kvp => new DWGNode
-                        {
-                            Name = kvp.Key.Name,
-                            ElementId = kvp.Key.ElementId,
-                            Layers = kvp.Value
-                        }).ToList();
-
-                        // Open window with current state
-                        var lineGraphicsWindow = new UI.LineGraphicsWindow(_themeManager, dwgNodesToUpdate, _uiDoc, true)
-                        {
-                            Owner = this
-                        };
-
-                        if (lineGraphicsWindow.ShowDialog() != true)
-                            return;
-
-                        if (dwgNodesToUpdate.Any())
-                        {
-                            _colorOverrideHandler.DWGNodes = dwgNodesToUpdate;
-                            _colorOverrideHandler.OverrideColor = lineGraphicsWindow.SelectedColor;
-                            _colorOverrideHandler.LinePattern = lineGraphicsWindow.SelectedPattern;
-                            _colorOverrideHandler.LineWeight = lineGraphicsWindow.SelectedWeight;
-                            _colorOverrideHandler.ClearOverrides = lineGraphicsWindow.ClearOverridesRequested;
-                            _colorOverrideHandler.IsLayerOverride = true;
-                            _colorOverrideEvent.Raise();
-
-                            // Sync local model to prevent reversion on subsequent visibility toggles
-                            // We need to update the ORIGINAL LayerNodes in layersToUpdate
-                            foreach (var layer in layersToUpdate)
-                            {
-                                if (lineGraphicsWindow.ClearOverridesRequested)
-                                {
-                                    layer.LineColor = null;
-                                    layer.LinePattern = null;
-                                    layer.LineWeight = null;
-                                }
-                                else
-                                {
-                                    if (lineGraphicsWindow.SelectedColor != null)
-                                    {
-                                        layer.LineColor = $"#{lineGraphicsWindow.SelectedColor.Red:X2}{lineGraphicsWindow.SelectedColor.Green:X2}{lineGraphicsWindow.SelectedColor.Blue:X2}";
-                                    }
-                                    if (lineGraphicsWindow.SelectedPattern != null)
-                                    {
-                                        layer.LinePattern = lineGraphicsWindow.SelectedPattern;
-                                    }
-                                    if (lineGraphicsWindow.SelectedWeight.HasValue)
-                                    {
-                                         if (lineGraphicsWindow.SelectedWeight.Value == -1) 
-                                             layer.LineWeight = null;
-                                         else 
-                                             layer.LineWeight = lineGraphicsWindow.SelectedWeight.Value;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            UniversalPopupWindow.Show("Layer override failed: Could not resolve parent DWG context.", "Error", MessageBoxButton.OK, MessageBoxImage.Error, this);
-                        }
-                    }
+                ShowStatus("Line graphics could not resolve the selected DWG context.", true, false);
+                return;
             }
+
+            OpenLineGraphicsInspector(session);
+        }
+
+        private LineGraphicsSession CreateLineGraphicsSession(object node)
+        {
+            Document document = _uiDoc?.Document;
+            View activeView = document?.ActiveView;
+            if (document == null || activeView == null)
+                return null;
+
+            if (node is DWGNode clickedDwgNode && clickedDwgNode.ElementId != null)
+            {
+                List<DWGNode> nodes = clickedDwgNode.IsSelected
+                    ? FilteredDWGNodes.Where(item => item.IsSelected && item.ElementId != null).ToList()
+                    : new List<DWGNode> { clickedDwgNode };
+                if (nodes.Count == 0)
+                    return null;
+
+                List<LineGraphicsTarget> targets = nodes
+                    .Select(item => new LineGraphicsTarget(item.ElementId, null))
+                    .ToList();
+                string noun = nodes.Count == 1 ? "DWG" : "DWGs";
+                return new LineGraphicsSession(
+                    document,
+                    activeView.Id,
+                    targets,
+                    false,
+                    $"{nodes.Count} {noun} in the active view",
+                    nodes,
+                    null);
+            }
+
+            if (!(node is LayerNode clickedLayerNode))
+                return null;
+
+            List<LayerNode> layers = clickedLayerNode.IsSelected
+                ? FilteredDWGNodes.SelectMany(dwg => dwg.Layers).Where(layer => layer.IsSelected).ToList()
+                : new List<LayerNode> { clickedLayerNode };
+
+            Dictionary<DWGNode, List<LayerNode>> layersByDwg = new Dictionary<DWGNode, List<LayerNode>>();
+            foreach (LayerNode layer in layers)
+            {
+                DWGNode parent = FindParentDWGNode(layer);
+                if (parent == null || parent.ElementId == null)
+                    continue;
+
+                if (!layersByDwg.TryGetValue(parent, out List<LayerNode> group))
+                {
+                    group = new List<LayerNode>();
+                    layersByDwg[parent] = group;
+                }
+                group.Add(layer);
+            }
+
+            if (layersByDwg.Count == 0)
+                return null;
+
+            List<LineGraphicsTarget> layerTargets = layersByDwg
+                .Select(pair => new LineGraphicsTarget(pair.Key.ElementId, pair.Value.Select(layer => layer.Name)))
+                .ToList();
+            List<LayerNode> resolvedLayers = layersByDwg.SelectMany(pair => pair.Value).ToList();
+            string layerNoun = resolvedLayers.Count == 1 ? "layer" : "layers";
+            string dwgNoun = layersByDwg.Count == 1 ? "DWG" : "DWGs";
+            return new LineGraphicsSession(
+                document,
+                activeView.Id,
+                layerTargets,
+                true,
+                $"{resolvedLayers.Count} {layerNoun} in {layersByDwg.Count} {dwgNoun}",
+                null,
+                resolvedLayers);
+        }
+
+        private void OpenLineGraphicsInspector(LineGraphicsSession session)
+        {
+            LineGraphicsWindow window = _windowCoordinator.ShowOrActivate(
+                "line-graphics",
+                () => new LineGraphicsWindow(_themeManager),
+                createdWindow =>
+                {
+                    createdWindow.ApplyRequested += LineGraphicsWindow_ApplyRequested;
+                    createdWindow.Closed += LineGraphicsWindow_Closed;
+                });
+
+            _lineGraphicsWindow = window;
+            if (!window.TryBeginLoad(session.ScopeDescription))
+            {
+                ShowStatus("Finish or close the current Line Graphics edits before changing its scope.", true, false);
+                return;
+            }
+
+            _lineGraphicsSession = session;
+            bool accepted = _lineGraphicsReadHandler.TrySubmit(
+                session.Document,
+                session.ViewId,
+                session.Targets,
+                session.IsLayerOverride,
+                snapshot =>
+                {
+                    if (ReferenceEquals(_lineGraphicsSession, session))
+                        _lineGraphicsWindow?.LoadSnapshot(snapshot);
+                },
+                message =>
+                {
+                    if (ReferenceEquals(_lineGraphicsSession, session))
+                        _lineGraphicsWindow?.SetRequestState(false, message, true);
+                    ShowStatus(message, true, false);
+                });
+
+            if (!accepted)
+            {
+                window.SetRequestState(false, "Another graphics state request is already pending.", true);
+                return;
+            }
+
+            ExternalEventRequest raiseResult = _lineGraphicsReadEvent.Raise();
+            if (raiseResult != ExternalEventRequest.Accepted)
+            {
+                _lineGraphicsReadHandler.CancelPendingRequest();
+                window.SetRequestState(false, "Revit could not queue the graphics state request. Try again.", true);
+            }
+        }
+
+        private void LineGraphicsWindow_ApplyRequested(object sender, LineGraphicsApplyRequestedEventArgs e)
+        {
+            LineGraphicsSession session = _lineGraphicsSession;
+            if (session == null || _lineGraphicsWindow == null)
+                return;
+
+            bool accepted = _colorOverrideHandler.TrySubmit(
+                session.Document,
+                session.ViewId,
+                session.Targets,
+                session.IsLayerOverride,
+                e.Color,
+                e.Pattern,
+                e.Weight,
+                e.ClearOverrides,
+                message =>
+                {
+                    string completionMessage = e.ClearOverrides
+                        ? $"{message} Use Revit Undo to restore the previous overrides."
+                        : $"{message} Use Revit Undo to revert this change.";
+                    ApplyLineGraphicsToLocalModel(session, e);
+                    _lineGraphicsWindow?.MarkApplied(e.ClearOverrides, completionMessage);
+                    ShowStatus(completionMessage, false, true);
+                },
+                message =>
+                {
+                    _lineGraphicsWindow?.SetRequestState(false, message, true);
+                    ShowStatus(message, true, false);
+                });
+
+            if (!accepted)
+            {
+                _lineGraphicsWindow.SetRequestState(false, "Another line graphics update is already pending.", true);
+                return;
+            }
+
+            _lineGraphicsWindow.SetRequestState(true, e.ClearOverrides
+                ? "Clearing overrides…"
+                : "Applying line graphics…");
+
+            ExternalEventRequest raiseResult = _colorOverrideEvent.Raise();
+            if (raiseResult != ExternalEventRequest.Accepted)
+            {
+                _colorOverrideHandler.CancelPendingRequest();
+                _lineGraphicsWindow.SetRequestState(false, "Revit could not queue the graphics update. Try again.", true);
+            }
+        }
+
+        private void ApplyLineGraphicsToLocalModel(LineGraphicsSession session, LineGraphicsApplyRequestedEventArgs request)
+        {
+            IEnumerable<object> items = session.IsLayerOverride
+                ? session.Layers.Cast<object>()
+                : session.DwgNodes.Cast<object>();
+
+            foreach (object item in items)
+            {
+                if (item is DWGNode dwgNode)
+                {
+                    UpdateLocalGraphics(dwgNode, request);
+                    SyncFilteredNodeToOriginal(dwgNode);
+                }
+                else if (item is LayerNode layerNode)
+                {
+                    UpdateLocalGraphics(layerNode, request);
+                }
+            }
+        }
+
+        private static void UpdateLocalGraphics(DWGNode node, LineGraphicsApplyRequestedEventArgs request)
+        {
+            if (request.ClearOverrides)
+            {
+                node.LineColor = null;
+                node.LinePattern = null;
+                node.LineWeight = null;
+                return;
+            }
+
+            if (request.Color != null)
+                node.LineColor = $"#{request.Color.Red:X2}{request.Color.Green:X2}{request.Color.Blue:X2}";
+            if (request.Pattern != null)
+                node.LinePattern = request.Pattern == "<No Override>" ? null : request.Pattern;
+            if (request.Weight.HasValue)
+                node.LineWeight = request.Weight.Value == -1 ? (int?)null : request.Weight.Value;
+        }
+
+        private static void UpdateLocalGraphics(LayerNode node, LineGraphicsApplyRequestedEventArgs request)
+        {
+            if (request.ClearOverrides)
+            {
+                node.LineColor = null;
+                node.LinePattern = null;
+                node.LineWeight = null;
+                return;
+            }
+
+            if (request.Color != null)
+                node.LineColor = $"#{request.Color.Red:X2}{request.Color.Green:X2}{request.Color.Blue:X2}";
+            if (request.Pattern != null)
+                node.LinePattern = request.Pattern == "<No Override>" ? null : request.Pattern;
+            if (request.Weight.HasValue)
+                node.LineWeight = request.Weight.Value == -1 ? (int?)null : request.Weight.Value;
+        }
+
+        private void LineGraphicsWindow_Closed(object sender, EventArgs e)
+        {
+            if (sender is LineGraphicsWindow window)
+            {
+                window.ApplyRequested -= LineGraphicsWindow_ApplyRequested;
+                window.Closed -= LineGraphicsWindow_Closed;
+            }
+
+            _lineGraphicsWindow = null;
+            _lineGraphicsSession = null;
         }
 
         private Dictionary<LayerNode, DWGNode> _layerToParentCache = new Dictionary<LayerNode, DWGNode>();
@@ -594,13 +1035,45 @@ namespace CAD_Manager
                 _halftoneHandler.Document = doc;
                 _halftoneHandler.CurrentView = view;
             }
-            
-            // ApplyToViewsHandler updates its SourceView on button click, but good to keep in sync if needed later
-            if (_applyToViewsHandler != null)
-            {
-                _applyToViewsHandler.Document = doc;
-            }
+
+            UpdateContextSummary();
         }
+
+        private void UpdateContextSummary()
+        {
+            if (StatusText == null)
+                return;
+
+            View currentView = _visibilityToggler?.CurrentView ?? _uiDoc?.Document?.ActiveView;
+            string viewName = currentView != null && !string.IsNullOrWhiteSpace(currentView.Name)
+                ? currentView.Name
+                : "No active view";
+
+            int selectedCount = 0;
+            if (DWGNodes != null)
+            {
+                selectedCount = DWGNodes.Count(node => node.IsSelected)
+                    + DWGNodes.Sum(node => node.Layers?.Count(layer => layer.IsSelected) ?? 0);
+            }
+
+            string selectionSummary = selectedCount == 0
+                ? "No selection"
+                : selectedCount == 1 ? "1 selected" : $"{selectedCount} selected";
+
+            string nextSummary = $"{viewName}  ·  {selectionSummary}";
+            bool contextChanged = !string.Equals(_contextSummary, nextSummary, StringComparison.Ordinal);
+            _contextSummary = nextSummary;
+
+            if (contextChanged && _notificationVisible)
+            {
+                RestoreContextSummary();
+                return;
+            }
+
+            if (!_notificationVisible)
+                RestoreContextSummary();
+        }
+
         private void TreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var sourceElement = e.OriginalSource as DependencyObject;
@@ -648,8 +1121,15 @@ namespace CAD_Manager
                 }
             }
 
+            foreach (DWGNode filteredNode in FilteredDWGNodes ?? Enumerable.Empty<DWGNode>())
+            {
+                filteredNode.IsSelected = false;
+                foreach (LayerNode layer in filteredNode.Layers)
+                    layer.IsSelected = false;
+            }
+
             _lastSelectedNode = null;
-            RefreshTreeView();
+            UpdateContextSummary();
         }
 
         private TreeViewItem GetTreeViewItemUnderMouse(MouseButtonEventArgs e)
@@ -693,22 +1173,22 @@ namespace CAD_Manager
                 _lastSelectedNode = selectedLayerNode;
             }
 
-            RefreshTreeView();
+            UpdateContextSummary();
         }
 
         private void SelectRange(DWGNode startNode, DWGNode endNode)
         {
             bool inRange = false;
-            foreach (var node in DWGNodes)
+            foreach (DWGNode node in FilteredDWGNodes ?? DWGNodes)
             {
                 if (node == startNode || node == endNode)
                 {
-                    node.IsSelected = true;
+                    SetDwgSelection(node, true);
                     inRange = !inRange;
                 }
                 if (inRange || node == startNode || node == endNode)
                 {
-                    node.IsSelected = true;
+                    SetDwgSelection(node, true);
                 }
             }
         }
@@ -716,7 +1196,7 @@ namespace CAD_Manager
         private void SelectRangeLayers(LayerNode startNode, LayerNode endNode)
         {
             bool inRange = false;
-            foreach (var dwgNode in DWGNodes)
+            foreach (DWGNode dwgNode in FilteredDWGNodes ?? DWGNodes)
             {
                 foreach (var layer in dwgNode.Layers)
                 {
@@ -739,7 +1219,7 @@ namespace CAD_Manager
             switch (node)
             {
                 case DWGNode dwgNode:
-                    dwgNode.IsSelected = !dwgNode.IsSelected;
+                    SetDwgSelection(dwgNode, !dwgNode.IsSelected);
                     break;
                 case LayerNode layerNode:
                     layerNode.IsSelected = !layerNode.IsSelected;
@@ -749,24 +1229,48 @@ namespace CAD_Manager
 
         private void SelectSingle(object node)
         {
-            foreach (var dwgNode in DWGNodes)
+            foreach (DWGNode dwgNode in DWGNodes)
             {
                 dwgNode.IsSelected = false;
-                foreach (var layer in dwgNode.Layers)
-                {
+                foreach (LayerNode layer in dwgNode.Layers)
                     layer.IsSelected = false;
-                }
+            }
+
+            foreach (DWGNode filteredNode in FilteredDWGNodes ?? Enumerable.Empty<DWGNode>())
+            {
+                filteredNode.IsSelected = false;
+                foreach (LayerNode layer in filteredNode.Layers)
+                    layer.IsSelected = false;
             }
 
             switch (node)
             {
                 case DWGNode dwgNode:
-                    dwgNode.IsSelected = true;
+                    SetDwgSelection(dwgNode, true);
                     break;
                 case LayerNode layerNode:
                     layerNode.IsSelected = true;
                     break;
             }
+        }
+
+        private void SetDwgSelection(DWGNode node, bool isSelected)
+        {
+            if (node == null)
+                return;
+
+            node.IsSelected = isSelected;
+            DWGNode original = DWGNodes?.FirstOrDefault(item =>
+                item.ElementId != null && node.ElementId != null &&
+                item.ElementId.GetIdValue() == node.ElementId.GetIdValue());
+            if (original != null)
+                original.IsSelected = isSelected;
+
+            DWGNode filtered = FilteredDWGNodes?.FirstOrDefault(item =>
+                item.ElementId != null && node.ElementId != null &&
+                item.ElementId.GetIdValue() == node.ElementId.GetIdValue());
+            if (filtered != null)
+                filtered.IsSelected = isSelected;
         }
         private void DWGTreeView_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -818,6 +1322,16 @@ namespace CAD_Manager
         }
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            // Consume Escape inside the modeless window so Revit does not treat
+            // it as a command-cancel/minimize gesture. Keep the local cleanup
+            // behavior without allowing the key to escape to the host.
+            if (e.Key == Key.Escape)
+            {
+                HandleEscapeKey();
+                e.Handled = true;
+                return;
+            }
+
             // Allow Ctrl+A unless the user is typing in the search box
             if (SearchBox.IsKeyboardFocusWithin)
                 return;
@@ -867,6 +1381,8 @@ namespace CAD_Manager
                 {
                     // Update initial state
                     UpdateExpanderTooltip(expander);
+                    string itemName = (item.DataContext as DWGNode)?.Name ?? "DWG";
+                    System.Windows.Automation.AutomationProperties.SetName(expander, $"Expand or collapse {itemName}");
 
                     // Hook up events to keep it dynamic
                     expander.Checked -= Expander_StateChanged;
@@ -916,6 +1432,49 @@ namespace CAD_Manager
                 if (foundChild != null) return foundChild;
             }
             return null;
+        }
+
+        private sealed class HalftoneUiChange
+        {
+            public HalftoneUiChange(DWGNode node, bool previousValue, bool newValue)
+            {
+                Node = node;
+                PreviousValue = previousValue;
+                NewValue = newValue;
+            }
+
+            public DWGNode Node { get; }
+            public bool PreviousValue { get; }
+            public bool NewValue { get; }
+        }
+
+        private sealed class LineGraphicsSession
+        {
+            public LineGraphicsSession(
+                Document document,
+                ElementId viewId,
+                List<LineGraphicsTarget> targets,
+                bool isLayerOverride,
+                string scopeDescription,
+                List<DWGNode> dwgNodes,
+                List<LayerNode> layers)
+            {
+                Document = document;
+                ViewId = viewId;
+                Targets = targets;
+                IsLayerOverride = isLayerOverride;
+                ScopeDescription = scopeDescription;
+                DwgNodes = dwgNodes ?? new List<DWGNode>();
+                Layers = layers ?? new List<LayerNode>();
+            }
+
+            public Document Document { get; }
+            public ElementId ViewId { get; }
+            public List<LineGraphicsTarget> Targets { get; }
+            public bool IsLayerOverride { get; }
+            public string ScopeDescription { get; }
+            public List<DWGNode> DwgNodes { get; }
+            public List<LayerNode> Layers { get; }
         }
 
     }

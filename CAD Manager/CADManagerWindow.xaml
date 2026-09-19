@@ -4,459 +4,381 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:CAD_Manager"
     xmlns:models="clr-namespace:CAD_Manager.Models"
-    xmlns:ui="clr-namespace:CAD_Manager.UI"
     xmlns:helpers="clr-namespace:CAD_Manager.Helpers"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-    Title="DWG Visibility Manager"
-    Width="350"
+    Title="CAD Manager"
+    Width="460"
     Height="800"
-    MinWidth="350"
+    MinWidth="420"
     MinHeight="500"
-    AllowsTransparency="True"
-    Background="Transparent"
+    AllowsTransparency="False"
+    Background="{DynamicResource SurfaceBrush}"
+    KeyboardNavigation.TabNavigation="Cycle"
     KeyDown="Window_KeyDown"
     Loaded="Window_Loaded"
-    Topmost="True"
+    ResizeMode="CanResize"
+    StateChanged="Window_StateChanged"
     WindowStartupLocation="Manual"
-    WindowStyle="None">
+    Style="{DynamicResource CadWindowStyle}">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      NonClientFrameEdges="None"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
     <Window.Resources>
         <!--  Include the StringToVisibilityConverter  -->
         <helpers:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+        <helpers:NonEmptyStringToVisibilityConverter x:Key="NonEmptyStringToVisibilityConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
-    <Grid Background="Transparent" ClipToBounds="True">
-        <!--  Outer Border with Opacity and Blur  -->
+    <Grid x:Name="RootGrid"
+          Background="{DynamicResource SurfaceBrush}"
+          ClipToBounds="True">
         <Border
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="2"
-            ClipToBounds="True"
-            CornerRadius="10"
-            Opacity="0.7"
-            SnapsToDevicePixels="True">
-            <Border.Effect>
-                <BlurEffect KernelType="Gaussian" Radius="2" />
-            </Border.Effect>
-        </Border>
-
-        <!--  Content Container (Not Affected by Opacity/Blur)  -->
-        <Border
-            Margin="2,2,2,2"
-            Background="{DynamicResource PrimaryBackgroundBrush}"
-            CornerRadius="10">
+            Margin="0"
+            Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="0">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="30" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!--  Custom Title Bar  -->
-                <ui:CustomTitleBar
-                    Grid.Row="0"
-                    Margin="0,0,0,1"
-                    Foreground="{DynamicResource ForegroundBrush}" />
-                <Grid
-                    Grid.Row="0"
-                    Grid.Column="0"
-                    Margin="0,0,100,0"
-                    HorizontalAlignment="Right">
-                    <ToggleButton
-                        x:Name="ThemeToggleButton"
-                        Width="28"
-                        Height="15.5"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
-                        Click="ToggleTheme_Click"
-                        DockPanel.Dock="Right"
-                        IsChecked="True"
-                        ToolTip="Toggle Theme">
-
-                        <ToggleButton.Template>
-                            <ControlTemplate TargetType="ToggleButton">
-                                <Grid Background="Transparent">
-                                    <!--  Dynamic Icon Based on Toggle State  -->
-                                    <materialDesign:PackIcon
-                                        x:Name="ThemeToggleIcon"
-                                        Width="30"
-                                        Height="30"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconBrush}"
-                                        Kind="ToggleSwitchOffOutline" />
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsChecked" Value="True">
-                                        <Setter TargetName="ThemeToggleIcon" Property="Kind" Value="ToggleSwitchOffOutline" />
-                                    </Trigger>
-                                    <Trigger Property="IsChecked" Value="False">
-                                        <Setter TargetName="ThemeToggleIcon" Property="Kind" Value="ToggleSwitchOutline" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </ToggleButton.Template>
-                    </ToggleButton>
-                </Grid>
-
-                <!--  Search Box with Clear Button  -->
-                <Grid
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="3"
-                    Width="125"
-                    Margin="0,10,10,0"
-                    HorizontalAlignment="Right">
-                    <Border
-                        Height="20"
-                        Padding="5"
-                        Background="{DynamicResource PrimaryBackgroundBrush}"
-                        BorderBrush="Gray"
-                        BorderThickness="1"
-                        CornerRadius="10">
-                        <Grid Margin="-6,-6,-6,-6">
-                            <!--  Clear Button with Material Design Icon  -->
-                            <Button
-                                Width="16"
-                                Height="16"
-                                Margin="107,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Click="ClearButton_Click">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Grid Background="Transparent">
-                                            <materialDesign:PackIcon
-                                                x:Name="ClearIcon"
-                                                Width="16"
-                                                Height="16"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                Foreground="Gray"
-                                                Kind="CloseCircleOutline" />
-                                        </Grid>
-                                        <ControlTemplate.Triggers>
-                                            <!--  Hover Effect  -->
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="ClearIcon" Property="Foreground" Value="#bebebe" />
-                                            </Trigger>
-                                            <!--  Pressed Effect  -->
-                                            <Trigger Property="IsPressed" Value="True">
-                                                <Setter TargetName="ClearIcon" Property="Foreground" Value="#000000" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
+                <!-- Sentinel-style drawn caption over native WindowChrome behavior. -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource TitleBarMaterialBrush}"
+                        BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                        BorderThickness="0,0,0,1">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal">
+                            <Button Margin="8,2,0,2"
+                                    AutomationProperties.Name="Show TreeView keyboard shortcuts"
+                                    AutomationProperties.HelpText="Shows keyboard and multi-selection shortcuts."
+                                    Click="ShowShortcuts_Click"
+                                    VerticalAlignment="Center"
+                                    Style="{DynamicResource CadIconButtonStyle}"
+                                    TabIndex="0"
+                                    ToolTip="Keyboard shortcuts"
+                                    WindowChrome.IsHitTestVisibleInChrome="True">
+                                <materialDesign:PackIcon Width="18"
+                                                         Height="18"
+                                                         Foreground="{DynamicResource IconBrush}"
+                                                         Kind="HelpCircleOutline" />
                             </Button>
-                            <TextBox
-                                x:Name="SearchBox"
-                                Width="97"
-                                Margin="8.2,0.5,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                CaretBrush="{DynamicResource ForegroundBrush}"
-                                Foreground="{DynamicResource ForegroundBrush}"
-                                SelectionBrush="{DynamicResource TextHighlightBrush}"
-                                Text=""
-                                TextAlignment="Left"
-                                TextChanged="SearchBox_TextChanged" />
-                            <TextBlock
-                                Width="37"
-                                Margin="10,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                IsHitTestVisible="False"
-                                Text="Search"
-                                Visibility="{Binding Text, Converter={StaticResource StringToVisibilityConverter}, ElementName=SearchBox}" />
+                            <ToggleButton x:Name="PinToggleButton"
+                                          Margin="4,2,0,2"
+                                          AutomationProperties.Name="Keep CAD Manager on top"
+                                          AutomationProperties.HelpText="Keeps this modeless window above Revit while you work."
+                                          Click="TogglePin_Click"
+                                          VerticalAlignment="Center"
+                                          Style="{DynamicResource CadIconToggleButtonStyle}"
+                                          TabIndex="1"
+                                          ToolTip="Keep CAD Manager on top"
+                                          WindowChrome.IsHitTestVisibleInChrome="True">
+                                <materialDesign:PackIcon x:Name="PinToggleIcon"
+                                                         Width="18"
+                                                         Height="18"
+                                                         Foreground="{DynamicResource IconBrush}"
+                                                         Kind="PinOutline" />
+                            </ToggleButton>
+                            <ToggleButton x:Name="ThemeToggleButton"
+                                          Margin="4,2,4,2"
+                                          AutomationProperties.Name="Toggle light or dark theme"
+                                          AutomationProperties.HelpText="Switches between light and dark palettes unless Windows High Contrast is active."
+                                          Click="ToggleTheme_Click"
+                                          IsChecked="True"
+                                          VerticalAlignment="Center"
+                                          Style="{DynamicResource CadIconToggleButtonStyle}"
+                                          TabIndex="2"
+                                          ToolTip="Toggle light or dark theme"
+                                          WindowChrome.IsHitTestVisibleInChrome="True">
+                                <materialDesign:PackIcon x:Name="ThemeToggleIcon"
+                                                         Width="16"
+                                                         Height="16"
+                                                         Foreground="{DynamicResource IconBrush}"
+                                                         Kind="WeatherNight" />
+                            </ToggleButton>
+                            <Button AutomationProperties.Name="Minimize CAD Manager"
+                                    Click="MinimizeWindow_Click"
+                                    Style="{DynamicResource CadCaptionButtonStyle}"
+                                    ToolTip="Minimize">
+                                <materialDesign:PackIcon Width="14"
+                                                         Height="14"
+                                                         Kind="WindowMinimize" />
+                            </Button>
+                            <Button x:Name="MaximizeButton"
+                                    AutomationProperties.Name="Maximize CAD Manager"
+                                    Click="MaximizeWindow_Click"
+                                    Style="{DynamicResource CadCaptionButtonStyle}"
+                                    ToolTip="Maximize">
+                                <materialDesign:PackIcon x:Name="MaximizeIcon"
+                                                         Width="14"
+                                                         Height="14"
+                                                         Kind="WindowMaximize" />
+                            </Button>
+                            <Button AutomationProperties.Name="Close CAD Manager"
+                                    Click="CloseWindow_Click"
+                                    Style="{DynamicResource CadCaptionCloseButtonStyle}"
+                                    ToolTip="Close">
+                                <materialDesign:PackIcon Width="14"
+                                                         Height="14"
+                                                         Kind="WindowClose" />
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Margin="16,0,8,0"
+                                    VerticalAlignment="Center">
+                            <TextBlock Style="{DynamicResource CadSectionTitleTextStyle}"
+                                       Text="CAD Manager" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!--  Labeled commands make the available actions scannable without relying on icon recall.  -->
+                <Border Grid.Row="1"
+                        Margin="10,10,10,0"
+                        Padding="8"
+                        Background="{DynamicResource TitleBarMaterialBrush}"
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource SurfaceCornerRadius}">
+                  <StackPanel>
+                    <DockPanel LastChildFill="True">
+                        <TextBlock Width="58"
+                                   VerticalAlignment="Center"
+                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                   Text="Presets" />
+                        <WrapPanel>
+                            <Button x:Name="SaveButton"
+                                    Margin="0,0,4,0"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    TabIndex="3"
+                                    AutomationProperties.AccessKey="Alt+S"
+                                    AutomationProperties.Name="Save layer visibility settings"
+                                    Click="SaveButton_Click"
+                                    ToolTip="Save layer visibility settings">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource IconForegroundBrush}" Kind="ContentSaveOutline" />
+                                    <AccessText VerticalAlignment="Center" Text="_Save" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="LoadButton"
+                                    Margin="0,0,4,0"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    TabIndex="4"
+                                    AutomationProperties.AccessKey="Alt+L"
+                                    AutomationProperties.Name="Load matching template"
+                                    Click="LoadButton_Click"
+                                    ToolTip="Load matching template">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource IconForegroundBrush}" Kind="DownloadCircleOutline" />
+                                    <AccessText VerticalAlignment="Center" Text="_Load" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BrowseButton"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    TabIndex="5"
+                                    AutomationProperties.AccessKey="Alt+B"
+                                    AutomationProperties.Name="Browse layer templates"
+                                    Click="BrowseButton_Click"
+                                    ToolTip="Browse layer templates">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource IconForegroundBrush}" Kind="FolderOpenOutline" />
+                                    <AccessText VerticalAlignment="Center" Text="_Browse" />
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </DockPanel>
+                    <DockPanel Margin="0,6,0,0" LastChildFill="True">
+                        <TextBlock Width="58"
+                                   VerticalAlignment="Center"
+                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                   Text="View" />
+                        <WrapPanel>
+                            <Button x:Name="ApplyToViewsButton"
+                                    Margin="0,0,4,0"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    TabIndex="6"
+                                    AutomationProperties.AccessKey="Alt+V"
+                                    AutomationProperties.Name="Apply current settings to views"
+                                    Click="ApplyToViewsButton_Click"
+                                    ToolTip="Apply current settings to views">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource IconForegroundBrush}" Kind="ApplicationExport" />
+                                    <AccessText VerticalAlignment="Center" Text="Apply to _Views" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="RefreshButton"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    TabIndex="7"
+                                    AutomationProperties.AccessKey="Alt+R"
+                                    AutomationProperties.Name="Refresh active view"
+                                    Click="RefreshButton_Click"
+                                    ToolTip="Refresh active view">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource IconForegroundBrush}" Kind="Refresh" />
+                                    <AccessText VerticalAlignment="Center" Text="_Refresh" />
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </DockPanel>
+                  </StackPanel>
+                </Border>
+
+                <!--  Search sits directly above the content it filters.  -->
+                <Grid
+                    Grid.Row="2"
+                    Margin="10,8,10,0">
+                    <Border
+                        Height="32"
+                        Background="{DynamicResource ControlSurfaceBrush}"
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource ControlCornerRadius}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="32" />
+                            </Grid.ColumnDefinitions>
+                            <Grid>
+                                <TextBox x:Name="SearchBox"
+                                         TabIndex="8"
+                                         Padding="10,0"
+                                         VerticalContentAlignment="Center"
+                                         AutomationProperties.Name="Search DWGs and layers"
+                                         AutomationProperties.AccessKey="Alt+F"
+                                         AutomationProperties.HelpText="Type to filter the tree. Press Alt+F to focus search."
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         CaretBrush="{DynamicResource ForegroundBrush}"
+                                         Foreground="{DynamicResource ForegroundBrush}"
+                                         SelectionBrush="{DynamicResource TextHighlightBrush}"
+                                         TextChanged="SearchBox_TextChanged" />
+                                <TextBlock Margin="10,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Style="{DynamicResource CadCaptionTextStyle}"
+                                           Text="Search DWGs and layers"
+                                           TextTrimming="CharacterEllipsis"
+                                           Visibility="{Binding Text, Converter={StaticResource StringToVisibilityConverter}, ElementName=SearchBox}" />
+                            </Grid>
+                            <Button Grid.Column="1"
+                                    Width="32"
+                                    Height="32"
+                                    Style="{DynamicResource CadIconButtonStyle}"
+                                    TabIndex="9"
+                                    AutomationProperties.Name="Clear search"
+                                    AutomationProperties.HelpText="Clears the current DWG and layer filter."
+                                    Click="ClearButton_Click"
+                                    ToolTip="Clear search">
+                                <materialDesign:PackIcon Width="16"
+                                                         Height="16"
+                                                         Foreground="{DynamicResource SecondaryForegroundBrush}"
+                                                         Kind="CloseCircleOutline" />
+                            </Button>
                         </Grid>
                     </Border>
                 </Grid>
-
-                <!--  Save and Load Buttons with Hover Effects  -->
-                <StackPanel
-                    Grid.Row="1"
-                    Grid.RowSpan="2"
-                    Height="30"
-                    Margin="10,5,140,0"
-                    VerticalAlignment="Top"
-                    Orientation="Horizontal">
-                    <!--  Save Button  -->
-                    <Button
-                        x:Name="SaveButton"
-                        Width="20"
-                        Height="23"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="SaveButton_Click"
-                        RenderTransformOrigin="0.5,0.5"
-                        ToolTip="Save the current layer visibility settings">
-                        <Button.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="1.3" ScaleY="1.3" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform X="3.4" />
-                            </TransformGroup>
-                        </Button.RenderTransform>
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Grid Background="Transparent">
-                                    <materialDesign:PackIcon
-                                        x:Name="SaveIcon"
-                                        Width="20"
-                                        Height="20"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconForegroundBrush}"
-                                        Kind="ContentSaveOutline" />
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <!--  Hover Effect  -->
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="SaveIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                    </Trigger>
-                                    <!--  Pressed Effect  -->
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter TargetName="SaveIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                    <Button
-                        x:Name="LoadButton"
-                        Width="23"
-                        Height="23"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="LoadButton_Click"
-                        RenderTransformOrigin="0.5,0.5"
-                        ToolTip="Load a saved layer visibility template">
-                        <Button.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="1.3" ScaleY="1.3" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform X="11" />
-                            </TransformGroup>
-                        </Button.RenderTransform>
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Grid Background="Transparent">
-                                    <materialDesign:PackIcon
-                                        x:Name="LoadIcon"
-                                        Width="20"
-                                        Height="20"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconForegroundBrush}"
-                                        Kind="DownloadCircleOutline" />
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <!--  Hover Effect  -->
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="LoadIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                    </Trigger>
-                                    <!--  Pressed Effect  -->
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter TargetName="LoadIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                    <Button
-                        x:Name="BrowseButton"
-                        Width="23"
-                        Height="23"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="BrowseButton_Click"
-                        RenderTransformOrigin="0.5,0.5"
-                        ToolTip="Browse and select a JSON file">
-                        <Button.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="1.3" ScaleY="1.3" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform X="19" />
-                            </TransformGroup>
-                        </Button.RenderTransform>
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Grid Background="Transparent">
-                                    <materialDesign:PackIcon
-                                        x:Name="BrowseIcon"
-                                        Width="20"
-                                        Height="20"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconForegroundBrush}"
-                                        Kind="FolderOpenOutline" />
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="BrowseIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter TargetName="BrowseIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                    <!--  Apply to Views Button  -->
-                    <Button
-                        x:Name="ApplyToViewsButton"
-                        Width="23"
-                        Height="23"
-                        Margin="8,0,0,0"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="ApplyToViewsButton_Click"
-                        RenderTransformOrigin="0.5,0.5"
-                        ToolTip="Apply current view settings to other views">
-                        <Button.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="1.3" ScaleY="1.3" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform X="19" />
-                            </TransformGroup>
-                        </Button.RenderTransform>
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Grid Background="Transparent">
-                                    <materialDesign:PackIcon
-                                        x:Name="ApplyIcon"
-                                        Width="18"
-                                        Height="18"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconForegroundBrush}"
-                                        Kind="ApplicationExport" />
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="ApplyIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter TargetName="ApplyIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                    <!--  Refresh Button  -->
-                    <Button
-                        x:Name="RefreshButton"
-                        Width="23"
-                        Height="23"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="RefreshButton_Click"
-                        RenderTransformOrigin="0.5,0.5"
-                        ToolTip="Refresh active view">
-                        <Button.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="1.3" ScaleY="1.3" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform X="27" />
-                            </TransformGroup>
-                        </Button.RenderTransform>
-                        <Button.Template>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Grid Background="Transparent">
-                                    <materialDesign:PackIcon
-                                        x:Name="RefreshIcon"
-                                        Width="20"
-                                        Height="20"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconForegroundBrush}"
-                                        Kind="Refresh" />
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="RefreshIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter TargetName="RefreshIcon" Property="Foreground" Value="{DynamicResource IconPressedBrush}" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-
-                </StackPanel>
-                <materialDesign:Card
-                    Grid.Row="2"
-                    Margin="10,10,10,10"
+                <Border
+                    x:Name="StatusBorder"
+                    Grid.Row="4"
+                    Margin="10,5,10,8"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    Visibility="Visible">
+                    <TextBlock x:Name="StatusText"
+                               VerticalAlignment="Center"
+                               AutomationProperties.LiveSetting="Polite"
+                               Foreground="{DynamicResource ForegroundBrush}"
+                               Style="{DynamicResource CadCaptionTextStyle}"
+                               Text="Active view  ·  No selection"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap" />
+                </Border>
+                <Border
+                    Grid.Row="3"
+                    Margin="10,10,10,0"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
-                    Background="Transparent"
-                    BorderBrush="Gray"
+                    Background="{DynamicResource ElevatedSurfaceBrush}"
+                    BorderBrush="{DynamicResource SeparatorBrush}"
                     BorderThickness="1"
-                    UniformCornerRadius="0">
+                    CornerRadius="{DynamicResource SurfaceCornerRadius}">
                     <!--  TreeView  -->
                     <TreeView
                         x:Name="DWGTreeView"
                         Grid.Row="2"
                         Grid.ColumnSpan="3"
                         Margin="0"
-                        Background="{DynamicResource PrimaryBackgroundBrush}"
+                        Background="Transparent"
                         BorderBrush="Transparent"
                         Focusable="True"
+                        TabIndex="11"
+                        AutomationProperties.Name="DWGs and layers"
+                        AutomationProperties.HelpText="Use arrows to navigate, Space to toggle visibility, and Ctrl or Shift for multi-selection."
                         Foreground="{DynamicResource IconBrush}"
+                        HorizontalContentAlignment="Stretch"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         ItemsSource="{Binding FilteredDWGNodes}"
                         PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown">
 
                         <TreeView.Resources>
-                            <!--  Style for Multi-Row Selection Highlighting  -->
                             <Style TargetType="TreeViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                <Setter Property="MinHeight" Value="36" />
+                                <Setter Property="Padding" Value="0" />
                                 <EventSetter Event="Loaded" Handler="TreeViewItem_Loaded" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource TextHighlightBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
 
-                            <!--  Custom Checkbox Style with Icons  -->
-                            <Style x:Key="CustomCheckboxStyle" TargetType="CheckBox">
+                            <Style x:Key="TreeVisibilityToggleStyle" TargetType="CheckBox">
+                                <Setter Property="Width" Value="32" />
+                                <Setter Property="Height" Value="32" />
+                                <Setter Property="Cursor" Value="Hand" />
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="CheckBox">
-                                            <Border
-                                                Padding="2"
-                                                Background="Transparent"
-                                                Cursor="Hand">
-                                                <Grid>
-                                                    <materialDesign:PackIcon
-                                                        x:Name="CheckboxIcon"
-                                                        Width="16"
-                                                        Height="16"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        Foreground="{DynamicResource IconBrush}"
-                                                        Kind="EyeOffOutline" />
-                                                </Grid>
+                                            <Border x:Name="ToggleBorder"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="1"
+                                                    CornerRadius="{DynamicResource ControlCornerRadius}">
+                                                <materialDesign:PackIcon x:Name="VisibilityIcon"
+                                                                         Width="18"
+                                                                         Height="18"
+                                                                         HorizontalAlignment="Center"
+                                                                         VerticalAlignment="Center"
+                                                                         Foreground="{DynamicResource IconBrush}"
+                                                                         Kind="EyeOffOutline" />
                                             </Border>
                                             <ControlTemplate.Triggers>
-                                                <!--  Checked State  -->
                                                 <Trigger Property="IsChecked" Value="True">
-                                                    <Setter TargetName="CheckboxIcon" Property="Kind" Value="EyeOutline" />
-                                                    <Setter TargetName="CheckboxIcon" Property="Foreground" Value="{DynamicResource IconBrush}" />
+                                                    <Setter TargetName="VisibilityIcon" Property="Kind" Value="EyeOutline" />
                                                 </Trigger>
-                                                <!--  Hover State  -->
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="CheckboxIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                                    <Setter Property="Cursor" Value="Hand" />
+                                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter TargetName="ToggleBorder" Property="Opacity" Value="0.55" />
+                                                    <Setter Property="Cursor" Value="Arrow" />
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
@@ -464,230 +386,234 @@
                                 </Setter>
                             </Style>
 
-
-                            <!--  Template for DWGNode  -->
-                            <HierarchicalDataTemplate DataType="{x:Type models:DWGNode}" ItemsSource="{Binding Layers}">
-                                <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
-                                    <CheckBox
-                                        VerticalAlignment="Center"
-                                        Checked="CheckBox_Toggled"
-                                        IsChecked="{Binding IsChecked}"
-                                        IsThreeState="False"
-                                        Style="{StaticResource CustomCheckboxStyle}"
-                                        ToolTip="Toggle Visibility"
-                                        Unchecked="CheckBox_Toggled" />
-                                    <TextBlock
-                                        Margin="2,0,5,0"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconBrush}"
-                                        Text="{Binding Name}" />
-
-                                    <ToggleButton
-                                        Width="16"
-                                        Height="16"
-                                        Margin="0,0,0,0"
-                                        VerticalAlignment="Center"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Checked="Halftone_Toggled"
-                                        IsChecked="{Binding IsHalftone}"
-                                        Unchecked="Halftone_Toggled">
-                                    <ToggleButton.Style>
-                                        <Style TargetType="ToggleButton">
-                                            <Setter Property="ToolTip" Value="Apply halftone" />
-                                            <Style.Triggers>
+                            <Style x:Key="TreeHalftoneToggleStyle" TargetType="ToggleButton">
+                                <Setter Property="Width" Value="32" />
+                                <Setter Property="Height" Value="32" />
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="ToggleBorder"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="1"
+                                                    CornerRadius="{DynamicResource ControlCornerRadius}">
+                                                <materialDesign:PackIcon x:Name="HalftoneIcon"
+                                                                         Width="18"
+                                                                         Height="18"
+                                                                         HorizontalAlignment="Center"
+                                                                         VerticalAlignment="Center"
+                                                                         Foreground="{DynamicResource IconBrush}"
+                                                                         Kind="CircleOutline"
+                                                                         Opacity="0.65" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
                                                 <Trigger Property="IsChecked" Value="True">
-                                                    <Setter Property="ToolTip" Value="Remove halftone" />
+                                                    <Setter TargetName="HalftoneIcon" Property="Kind" Value="CircleHalfFull" />
+                                                    <Setter TargetName="HalftoneIcon" Property="Opacity" Value="1" />
+                                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource SelectionBrush}" />
                                                 </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                                                    <Setter TargetName="HalftoneIcon" Property="Opacity" Value="1" />
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter TargetName="ToggleBorder" Property="Opacity" Value="0.55" />
+                                                    <Setter Property="Cursor" Value="Arrow" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+
+                            <Style x:Key="TreeGraphicsButtonStyle"
+                                   BasedOn="{StaticResource CadIconButtonStyle}"
+                                   TargetType="Button">
+                                <Setter Property="Width" Value="32" />
+                                <Setter Property="Height" Value="32" />
+                                <Setter Property="ToolTip" Value="Edit line graphics" />
+                            </Style>
+
+                            <HierarchicalDataTemplate DataType="{x:Type models:DWGNode}" ItemsSource="{Binding Layers}">
+                                <Border Padding="4,2" CornerRadius="{DynamicResource ControlCornerRadius}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </ToggleButton.Style>
-                                        <ToggleButton.Template>
-                                            <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                <Grid Background="Transparent">
-                                                    <materialDesign:PackIcon
-                                                        x:Name="HalftoneIcon"
-                                                        Width="14"
-                                                        Height="14"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        Foreground="{DynamicResource IconBrush}"
-                                                        Kind="CircleOutline"
-                                                        Opacity="0.5" />
-                                                </Grid>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsChecked" Value="True">
-                                                        <Setter TargetName="HalftoneIcon" Property="Kind" Value="CircleHalfFull" />
-                                                        <Setter TargetName="HalftoneIcon" Property="Opacity" Value="1.0" />
-                                                    </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="HalftoneIcon" Property="Foreground" Value="{DynamicResource IconHoverBrush}" />
-                                                        <Setter TargetName="HalftoneIcon" Property="Opacity" Value="1.0" />
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </ToggleButton.Template>
-                                    </ToggleButton>
-
-                                    <Button
-                                        Width="16"
-                                        Height="16"
-                                        Margin="5,0,0,0"
-                                        VerticalAlignment="Center"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Click="TreeViewItem_EditButton_Click"
-                                        Tag="{Binding}"
-                                        ToolTip="Set Line Style">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="{x:Type Button}">
-                                                <Grid Background="Transparent">
-                                                    <materialDesign:PackIcon
-                                                        Width="14"
-                                                        Height="14"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        Foreground="{DynamicResource IconBrush}"
-                                                        Kind="Palette"
-                                                        Opacity="0.5" />
-                                                </Grid>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Cursor" Value="Hand" />
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
-
-                                    <!-- Spacer and Edit Button
-                                <Button Content="Edit"
-                        Click="TreeViewItem_EditButton_Click"
-                        Tag="{Binding}"
-                        Height="15"
-                        Margin="5,0,0,0"
-                        Padding="3,0,3,0"/>-->
-                                </StackPanel>
+                                    </Border.Style>
+                                    <Grid MinHeight="32">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Grid.Column="0"
+                                                  VerticalAlignment="Center"
+                                                  AutomationProperties.HelpText="Changes all selected rows when this row is selected."
+                                                  AutomationProperties.Name="{Binding Name, StringFormat=Toggle visibility for {0}}"
+                                                  Click="CheckBox_Toggled"
+                                                  IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                  IsThreeState="False"
+                                                  ToolTip="Toggle visibility">
+                                            <CheckBox.Style>
+                                                <Style BasedOn="{StaticResource TreeVisibilityToggleStyle}" TargetType="CheckBox">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsVisibilityPending}" Value="True">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </CheckBox.Style>
+                                        </CheckBox>
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="4,0,8,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource ForegroundBrush}"
+                                                   Text="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <ToggleButton Grid.Column="2"
+                                                      VerticalAlignment="Center"
+                                                      AutomationProperties.HelpText="Changes all selected DWGs when this row is selected."
+                                                      AutomationProperties.Name="{Binding Name, StringFormat=Toggle halftone for {0}}"
+                                                      Click="Halftone_Toggled"
+                                                      IsChecked="{Binding IsHalftone, Mode=TwoWay}"
+                                                      ToolTip="Toggle halftone">
+                                            <ToggleButton.Style>
+                                                <Style BasedOn="{StaticResource TreeHalftoneToggleStyle}" TargetType="ToggleButton">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsHalftonePending}" Value="True">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ToggleButton.Style>
+                                        </ToggleButton>
+                                        <Button Grid.Column="3"
+                                                VerticalAlignment="Center"
+                                                Style="{StaticResource TreeGraphicsButtonStyle}"
+                                                AutomationProperties.Name="{Binding Name, StringFormat=Edit line graphics for {0}}"
+                                                Click="TreeViewItem_EditButton_Click"
+                                                Tag="{Binding}">
+                                            <materialDesign:PackIcon Width="18" Height="18" Foreground="{DynamicResource IconBrush}" Kind="Palette" Opacity="0.75" />
+                                        </Button>
+                                        <StackPanel Grid.Column="4" Margin="6,0,2,0" VerticalAlignment="Center">
+                                            <TextBlock Style="{DynamicResource CadCaptionTextStyle}"
+                                                       AutomationProperties.LiveSetting="Polite"
+                                                       Text="Updating visibility…"
+                                                       Visibility="{Binding IsVisibilityPending, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <TextBlock Style="{DynamicResource CadCaptionTextStyle}"
+                                                       AutomationProperties.LiveSetting="Polite"
+                                                       Text="Updating halftone…"
+                                                       Visibility="{Binding IsHalftonePending, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1"
+                                                   Grid.Column="1"
+                                                   Grid.ColumnSpan="4"
+                                                   Margin="4,2,4,2"
+                                                   AutomationProperties.LiveSetting="Assertive"
+                                                   Foreground="{DynamicResource ErrorBrush}"
+                                                   Text="{Binding OperationError}"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="{Binding OperationError, Converter={StaticResource NonEmptyStringToVisibilityConverter}}" />
+                                    </Grid>
+                                </Border>
                             </HierarchicalDataTemplate>
 
-                            <!--  Template for LayerNode  -->
                             <DataTemplate DataType="{x:Type models:LayerNode}">
-                                <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
-                                    <CheckBox
-                                        VerticalAlignment="Center"
-                                        Checked="CheckBox_Toggled"
-                                        IsChecked="{Binding IsChecked}"
-                                        IsThreeState="False"
-                                        Style="{StaticResource CustomCheckboxStyle}"
-                                        Unchecked="CheckBox_Toggled" />
-
-                                    <TextBlock
-                                        Margin="2,0,5,0"
-                                        VerticalAlignment="Center"
-                                        Foreground="{DynamicResource IconBrush}"
-                                        Text="{Binding Name}" />
-
-                                    <Button
-                                        Width="16"
-                                        Height="16"
-                                        Margin="0,0,0,0"
-                                        VerticalAlignment="Center"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Click="TreeViewItem_EditButton_Click"
-                                        Tag="{Binding}"
-                                        ToolTip="Set Line Style">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="{x:Type Button}">
-                                                <Grid Background="Transparent">
-                                                    <materialDesign:PackIcon
-                                                        Width="14"
-                                                        Height="14"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        Foreground="{DynamicResource IconBrush}"
-                                                        Kind="Palette"
-                                                        Opacity="0.5" />
-                                                </Grid>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Cursor" Value="Hand" />
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
-
-                                    <!-- Spacer and Edit Button
-                                <Button Content="Edit"
-                        Click="TreeViewItem_EditButton_Click"
-                        Tag="{Binding}"
-                        Height="15"
-                        Margin="5,0,0,0"
-                        Padding="3,0,3,0"/>-->
-                                </StackPanel>
+                                <Border Padding="4,2" CornerRadius="{DynamicResource ControlCornerRadius}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid MinHeight="32">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Grid.Column="0"
+                                                  VerticalAlignment="Center"
+                                                  AutomationProperties.HelpText="Changes all selected rows when this row is selected."
+                                                  AutomationProperties.Name="{Binding Name, StringFormat=Toggle visibility for {0}}"
+                                                  Click="CheckBox_Toggled"
+                                                  IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                  IsThreeState="False"
+                                                  ToolTip="Toggle visibility">
+                                            <CheckBox.Style>
+                                                <Style BasedOn="{StaticResource TreeVisibilityToggleStyle}" TargetType="CheckBox">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsVisibilityPending}" Value="True">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </CheckBox.Style>
+                                        </CheckBox>
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="4,0,8,0"
+                                                   VerticalAlignment="Center"
+                                                   AutomationProperties.LiveSetting="Polite"
+                                                   Foreground="{DynamicResource ForegroundBrush}"
+                                                   Text="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <Button Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                Style="{StaticResource TreeGraphicsButtonStyle}"
+                                                AutomationProperties.Name="{Binding Name, StringFormat=Edit line graphics for {0}}"
+                                                Click="TreeViewItem_EditButton_Click"
+                                                Tag="{Binding}">
+                                            <materialDesign:PackIcon Width="18" Height="18" Foreground="{DynamicResource IconBrush}" Kind="Palette" Opacity="0.75" />
+                                        </Button>
+                                        <TextBlock Grid.Column="3"
+                                                   Margin="6,0,2,0"
+                                                   VerticalAlignment="Center"
+                                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                                   Text="Updating visibility…"
+                                                   Visibility="{Binding IsVisibilityPending, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <TextBlock Grid.Row="1"
+                                                   Grid.Column="1"
+                                                   Grid.ColumnSpan="3"
+                                                   Margin="4,2,4,2"
+                                                   AutomationProperties.LiveSetting="Assertive"
+                                                   Foreground="{DynamicResource ErrorBrush}"
+                                                   Text="{Binding OperationError}"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="{Binding OperationError, Converter={StaticResource NonEmptyStringToVisibilityConverter}}" />
+                                    </Grid>
+                                </Border>
                             </DataTemplate>
                         </TreeView.Resources>
                     </TreeView>
 
-                </materialDesign:Card>
+                </Border>
             </Grid>
         </Border>
 
-        <!--  Left Edge  -->
-        <Border
-            x:Name="LeftEdge"
-            Width="5"
-            HorizontalAlignment="Left"
-            Background="Transparent"
-            Cursor="SizeWE"
-            MouseEnter="LeftEdge_MouseEnter"
-            MouseLeave="Edge_MouseLeave"
-            MouseLeftButtonDown="LeftEdge_MouseLeftButtonDown" />
-        <!--  Right Edge  -->
-        <Border
-            x:Name="RightEdge"
-            Width="5"
-            HorizontalAlignment="Right"
-            Background="Transparent"
-            Cursor="SizeWE"
-            MouseEnter="RightEdge_MouseEnter"
-            MouseLeave="Edge_MouseLeave"
-            MouseLeftButtonDown="RightEdge_MouseLeftButtonDown" />
-        <!--  Bottom Edge  -->
-
-        <Border
-            x:Name="BottomEdge"
-            Height="5"
-            VerticalAlignment="Bottom"
-            Background="Transparent"
-            Cursor="SizeNS"
-            MouseEnter="BottomEdge_MouseEnter"
-            MouseLeave="Edge_MouseLeave"
-            MouseLeftButtonDown="BottomEdge_MouseLeftButtonDown" />
-        <!--  Bottom-Left Corner  -->
-        <Border
-            x:Name="BottomLeftCorner"
-            Width="10"
-            Height="10"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Bottom"
-            Background="Transparent"
-            Cursor="SizeNESW"
-            MouseEnter="BottomLeftCorner_MouseEnter"
-            MouseLeave="Edge_MouseLeave"
-            MouseLeftButtonDown="BottomLeftCorner_MouseLeftButtonDown" />
-        <!--  Bottom-Right Corner  -->
-        <Border
-            x:Name="BottomRightCorner"
-            Width="10"
-            Height="10"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Bottom"
-            Background="Transparent"
-            Cursor="SizeNWSE"
-            MouseEnter="BottomRightCorner_MouseEnter"
-            MouseLeave="Edge_MouseLeave"
-            MouseLeftButtonDown="BottomRightCorner_MouseLeftButtonDown" />
     </Grid>
 </Window>

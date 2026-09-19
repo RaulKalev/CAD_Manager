@@ -1,228 +1,131 @@
-﻿using Autodesk.Revit.UI;
-using System;
 using CAD_Manager.Models;
-using CAD_Manager.UI;
-using CAD_Manager.Helpers;
-using CAD_Manager; // For CADManagerWindow
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Controls.Primitives;
 
 namespace CAD_Manager.ViewModels
 {
-    public class TreeViewControls
+    public sealed class TreeVisibilityChange
     {
-        private readonly ExternalEvent _externalEvent;
-        private readonly List<DWGNode> _dwgNodes;
-
-        public TreeViewControls(ExternalEvent externalEvent, List<DWGNode> dwgNodes)
+        public TreeVisibilityChange(object node, bool previousValue, bool newValue)
         {
-            _externalEvent = externalEvent;
-            _dwgNodes = dwgNodes;
+            Node = node;
+            PreviousValue = previousValue;
+            NewValue = newValue;
         }
 
+        public object Node { get; }
+        public bool PreviousValue { get; }
+        public bool NewValue { get; }
+    }
+
+    public class TreeViewControls
+    {
         /// <summary>
         /// Sorts DWG nodes and their layers alphabetically.
         /// </summary>
         public void SortDWGs(List<DWGNode> dwgNodes)
         {
-            if (dwgNodes == null) return;
+            if (dwgNodes == null)
+                return;
 
             dwgNodes.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase));
-
-            foreach (var dwgNode in dwgNodes)
+            foreach (DWGNode dwgNode in dwgNodes)
             {
-                dwgNode.Layers = dwgNode.Layers.OrderBy(layer => layer.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                dwgNode.Layers = dwgNode.Layers
+                    .OrderBy(layer => layer.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
             }
         }
 
-        /// <summary>
-        /// Expands all DWG nodes by setting the IsExpanded property on the model.
-        /// </summary>
         public void ExpandAllNodes(IEnumerable<DWGNode> nodes)
         {
-            if (nodes == null) return;
+            if (nodes == null)
+                return;
 
-            foreach (var node in nodes)
-            {
+            foreach (DWGNode node in nodes)
                 node.IsExpanded = true;
-            }
         }
 
         /// <summary>
-        /// Handles the toggling of visibility checkboxes, separating DWG and Layer toggles, and applies changes to selected rows.
+        /// Applies an immediate visibility preview and returns enough state to roll it back.
+        /// Multi-row application occurs only when the clicked row is itself selected.
         /// </summary>
-        public void HandleCheckBoxToggled(object sender, TreeView treeView, List<DWGNode> currentFilteredList)
+        public List<TreeVisibilityChange> PrepareVisibilityChanges(
+            CheckBox checkBox,
+            List<DWGNode> currentFilteredList)
         {
-            if (sender is CheckBox checkBox)
+            List<TreeVisibilityChange> changes = new List<TreeVisibilityChange>();
+            if (checkBox == null || currentFilteredList == null)
+                return changes;
+
+            object clickedNode = checkBox.DataContext;
+            bool newValue = checkBox.IsChecked == true;
+            bool clickedIsSelected = IsSelected(clickedNode);
+
+            List<object> targets = clickedIsSelected
+                ? GetSelectedNodes(currentFilteredList).ToList()
+                : new List<object> { clickedNode };
+
+            foreach (object target in targets.Where(target => target is DWGNode || target is LayerNode).Distinct())
             {
-                bool isChecked = checkBox.IsChecked == true;
+                bool previousValue = ReferenceEquals(target, clickedNode)
+                    ? !newValue
+                    : GetVisibility(target);
 
-                // Find the TreeViewItem associated with the checkbox
-                var treeViewItem = FindParentTreeViewItem(checkBox);
-                if (treeViewItem == null) return;
-
-                var dataContext = treeViewItem.DataContext;
-
-                // Apply to all selected DWGNodes in the current list
-                var selectedDwgNodes = GetSelectedDWGNodes(currentFilteredList).ToList();
-                if (selectedDwgNodes.Any())
-                {
-                    foreach (var selectedDwg in selectedDwgNodes)
-                    {
-                        selectedDwg.IsChecked = isChecked;
-                    }
-                }
-
-                // Apply to all selected LayerNodes in the current list
-                var selectedLayerNodes = GetSelectedLayerNodes(currentFilteredList).ToList();
-                if (selectedLayerNodes.Any())
-                {
-                    foreach (var selectedLayer in selectedLayerNodes)
-                    {
-                        selectedLayer.IsChecked = isChecked;
-                    }
-                }
-
-                // If neither DWG nor Layer is selected, fallback to the clicked node
-                if (!selectedDwgNodes.Any() && !selectedLayerNodes.Any())
-                {
-                    if (dataContext is DWGNode dwgNode)
-                    {
-                        dwgNode.IsChecked = isChecked;
-                    }
-                    else if (dataContext is LayerNode layerNode)
-                    {
-                        layerNode.IsChecked = isChecked;
-                    }
-                }
-
-                // Trigger the external event after handling the toggle
-                _externalEvent.Raise();
-
-                // Force visual update of TreeView checkboxes
-                RefreshCheckboxes(treeView);
+                SetVisibility(target, newValue);
+                changes.Add(new TreeVisibilityChange(target, previousValue, newValue));
             }
+
+            return changes;
         }
 
-        /// <summary>
-        /// Finds the parent TreeViewItem of a control.
-        /// </summary>
-        private TreeViewItem FindParentTreeViewItem(DependencyObject child)
-        {
-            while (child != null && !(child is TreeViewItem))
-            {
-                child = VisualTreeHelper.GetParent(child);
-            }
-            return child as TreeViewItem;
-        }
-
-
-        private void RefreshCheckboxes(ItemsControl parent)
-        {
-            if (parent == null) return;
-
-            foreach (var item in parent.Items)
-            {
-                if (parent.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem treeViewItem)
-                {
-                    // Find the CheckBox in the TreeViewItem
-                    var checkBox = FindVisualChild<CheckBox>(treeViewItem);
-                    if (checkBox != null)
-                    {
-                        checkBox.IsChecked = (item as DWGNode)?.IsChecked ?? (item as LayerNode)?.IsChecked;
-                    }
-
-                    // Recursively refresh child items
-                    if (treeViewItem.HasItems)
-                    {
-                        RefreshCheckboxes(treeViewItem);
-                    }
-                }
-            }
-        }
-
-        // Helper method to find a child of a specific type in the visual tree
-        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T typedChild)
-                {
-                    return typedChild;
-                }
-                var result = FindVisualChild<T>(child);
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Retrieves all selected DWGNodes from the provided list.
-        /// </summary>
-        private IEnumerable<DWGNode> GetSelectedDWGNodes(List<DWGNode> nodes)
-        {
-            return nodes?.Where(node => node.IsSelected) ?? Enumerable.Empty<DWGNode>();
-        }
-
-        /// <summary>
-        /// Retrieves all selected LayerNodes from the provided list.
-        /// </summary>
-        private IEnumerable<LayerNode> GetSelectedLayerNodes(List<DWGNode> nodes)
-        {
-            return nodes?
-                .SelectMany(dwg => dwg.Layers)
-                .Where(layer => layer.IsSelected)
-                ?? Enumerable.Empty<LayerNode>();
-        }
-
-        /// <summary>
-        /// Refreshes the TreeView with the updated data.
-        /// </summary>
         public void RefreshTreeView(TreeView treeView, List<DWGNode> filteredNodes)
         {
-            if (treeView == null || filteredNodes == null) return;
+            if (treeView == null || filteredNodes == null)
+                return;
 
-            treeView.ItemsSource = null;
-            treeView.ItemsSource = filteredNodes;
-            // ExpandAllNodes(filteredNodes); // Do not force expansion on refresh
-
-            // Ensure selection is visually reflected
-            ApplySelectionToTreeView(treeView, filteredNodes);
+            // Preserve realized containers, keyboard focus, expansion, and scroll position
+            // when only row properties changed.
+            if (!ReferenceEquals(treeView.ItemsSource, filteredNodes))
+                treeView.ItemsSource = filteredNodes;
         }
 
-        /// <summary>
-        /// Applies selection state to TreeView items based on DWGNode's IsSelected property.
-        /// </summary>
-        private void ApplySelectionToTreeView(TreeView treeView, List<DWGNode> nodes)
+        private static IEnumerable<object> GetSelectedNodes(IEnumerable<DWGNode> nodes)
         {
-            foreach (var node in nodes)
+            foreach (DWGNode dwgNode in nodes)
             {
-                if (treeView.ItemContainerGenerator.ContainerFromItem(node) is TreeViewItem treeViewItem)
-                {
-                    treeViewItem.IsSelected = node.IsSelected;
-                }
+                if (dwgNode.IsSelected)
+                    yield return dwgNode;
 
-                // Handle child layers
-                if (node.Layers != null && node.Layers.Any())
-                {
-                    foreach (var layer in node.Layers)
-                    {
-                        if (treeView.ItemContainerGenerator.ContainerFromItem(layer) is TreeViewItem layerItem)
-                        {
-                            layerItem.IsSelected = layer.IsSelected;
-                        }
-                    }
-                }
+                foreach (LayerNode layer in dwgNode.Layers.Where(item => item.IsSelected))
+                    yield return layer;
             }
         }
 
+        private static bool IsSelected(object node)
+        {
+            if (node is DWGNode dwgNode)
+                return dwgNode.IsSelected;
+            if (node is LayerNode layerNode)
+                return layerNode.IsSelected;
+            return false;
+        }
+
+        private static bool GetVisibility(object node)
+        {
+            if (node is DWGNode dwgNode)
+                return dwgNode.IsChecked;
+            return node is LayerNode layerNode && layerNode.IsChecked;
+        }
+
+        private static void SetVisibility(object node, bool value)
+        {
+            if (node is DWGNode dwgNode)
+                dwgNode.IsChecked = value;
+            else if (node is LayerNode layerNode)
+                layerNode.IsChecked = value;
+        }
     }
 }

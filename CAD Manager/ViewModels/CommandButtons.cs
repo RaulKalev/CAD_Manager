@@ -21,17 +21,28 @@ namespace CAD_Manager.ViewModels
         private readonly VisibilityToggler _visibilityToggler;
         private readonly LayerVisibilityManager _layerVisibilityManager;
         private readonly Action _refreshTreeView;
-        // Add new fields for the query event
-
         private readonly Window _owner;
+        private readonly Action<string, bool, bool> _notify;
 
-        public CommandButtons(UIDocument uiDoc, ExternalEvent externalEvent, VisibilityToggler visibilityToggler, Action refreshTreeView, Window owner)
+        public CommandButtons(
+            UIDocument uiDoc,
+            ExternalEvent externalEvent,
+            VisibilityToggler visibilityToggler,
+            Action refreshTreeView,
+            Window owner,
+            Action<string, bool, bool> notify)
         {
             _uiDoc = uiDoc;
             _externalEvent = externalEvent;
             _visibilityToggler = visibilityToggler;
             _owner = owner;
-            _layerVisibilityManager = new LayerVisibilityManager(_uiDoc.Document, _externalEvent, _visibilityToggler, _owner);
+            _notify = notify;
+            _layerVisibilityManager = new LayerVisibilityManager(
+                _uiDoc.Document,
+                _externalEvent,
+                _visibilityToggler,
+                _owner,
+                _notify);
             _refreshTreeView = refreshTreeView;
         }
         public void LoadButton_Click(object sender, RoutedEventArgs e)
@@ -39,7 +50,7 @@ namespace CAD_Manager.ViewModels
             string saveFolder = _layerVisibilityManager.GetProjectSaveFolder();
             if (string.IsNullOrEmpty(saveFolder))
             {
-                UniversalPopupWindow.Show("Save folder not found. Save a template to create a save folder in your project directory.", "Error", MessageBoxButton.OK, MessageBoxImage.Error, _owner);
+                Notify("Save folder not found. Save a template to create one for this project.", true, false);
                 return;
             }
 
@@ -48,7 +59,7 @@ namespace CAD_Manager.ViewModels
 
             if (string.IsNullOrEmpty(matchingTemplateFolder))
             {
-                UniversalPopupWindow.Show("No matching template found.", "No Match", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
+                Notify("No matching layer template was found.", false, true);
                 return;
             }
 
@@ -136,18 +147,12 @@ namespace CAD_Manager.ViewModels
                     }
                     else
                     {
-                        UniversalPopupWindow.Show(
-                            "The selected file does not match the current layers. Please select a matching JSON file.",
-                            "Invalid File",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error,
-                            _owner);
+                        Notify("The selected file does not match the current layers. Choose a matching JSON file.", true, false);
                     }
                 }
                 else
                 {
-                    // User canceled the browse window
-                    UniversalPopupWindow.Show("No file loaded.", "Info", MessageBoxButton.OK, MessageBoxImage.Information, _owner);
+                    // Canceling the system picker is non-destructive and needs no alert.
                     break;
                 }
             }
@@ -185,6 +190,22 @@ namespace CAD_Manager.ViewModels
 
             // Refresh the TreeView UI
             _refreshTreeView.Invoke();
+        }
+
+        private void Notify(string message, bool isError, bool autoDismiss)
+        {
+            if (_notify != null)
+            {
+                _notify(message, isError, autoDismiss);
+                return;
+            }
+
+            UniversalPopupWindow.Show(
+                message,
+                isError ? "Error" : "Notification",
+                MessageBoxButton.OK,
+                isError ? MessageBoxImage.Error : MessageBoxImage.Information,
+                _owner);
         }
 
 
