@@ -1,0 +1,200 @@
+<Window x:Class="CAD_Manager.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="CAD Manager Settings"
+        Width="560"
+        Height="620"
+        MinWidth="500"
+        MinHeight="520"
+        AllowsTransparency="False"
+        Background="{DynamicResource SurfaceBrush}"
+        ShowInTaskbar="False"
+        ResizeMode="CanResize"
+        Style="{DynamicResource CadWindowStyle}"
+        KeyboardNavigation.TabNavigation="Cycle"
+        WindowStartupLocation="CenterOwner">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      NonClientFrameEdges="None"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Grid Background="{DynamicResource SurfaceBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{DynamicResource TitleBarMaterialBrush}"
+                BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        AutomationProperties.Name="Close settings"
+                        Click="CloseButton_Click"
+                        Style="{DynamicResource CadCaptionCloseButtonStyle}"
+                        ToolTip="Close">
+                    <materialDesign:PackIcon Width="14" Height="14" Kind="WindowClose" />
+                </Button>
+                <TextBlock Margin="16,0,8,0"
+                           VerticalAlignment="Center"
+                           Style="{DynamicResource CadSectionTitleTextStyle}"
+                           Text="Settings" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1"
+                      Padding="16"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Style="{DynamicResource CadSectionTitleTextStyle}"
+                           Text="Appearance" />
+                <Border Margin="0,8,0,18"
+                        Padding="12"
+                        Background="{DynamicResource ElevatedSurfaceBrush}"
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource SurfaceCornerRadius}">
+                    <DockPanel LastChildFill="True">
+                        <Button x:Name="ThemeButton"
+                                DockPanel.Dock="Right"
+                                MinWidth="128"
+                                Style="{DynamicResource CadButtonStyle}"
+                                AutomationProperties.Name="Toggle light or dark theme"
+                                Click="ThemeButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon x:Name="ThemeIcon"
+                                                         Width="16"
+                                                         Height="16"
+                                                         Margin="0,0,6,0"
+                                                         Foreground="{DynamicResource IconForegroundBrush}" />
+                                <TextBlock x:Name="ThemeButtonText" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <StackPanel Margin="0,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Style="{DynamicResource CadBodyTextStyle}" Text="Color theme" />
+                            <TextBlock Margin="0,3,0,0"
+                                       Style="{DynamicResource CadCaptionTextStyle}"
+                                       Text="Switch between the light and dark palettes."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Style="{DynamicResource CadSectionTitleTextStyle}"
+                           Text="Layer tools" />
+                <Border Margin="0,8,0,18"
+                        Padding="12"
+                        Background="{DynamicResource ElevatedSurfaceBrush}"
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource SurfaceCornerRadius}">
+                    <StackPanel>
+                        <TextBlock Style="{DynamicResource CadBodyTextStyle}"
+                                   Text="Selection filters" />
+                        <TextBlock Margin="0,3,0,10"
+                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                   Text="Create reusable layer-name rules for selecting rows in the main window."
+                                   TextWrapping="Wrap" />
+                        <Button x:Name="SelectionFiltersButton"
+                                HorizontalAlignment="Left"
+                                MinWidth="156"
+                                Style="{DynamicResource CadButtonStyle}"
+                                AutomationProperties.Name="Edit layer selection filters"
+                                Click="SelectionFiltersButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Width="16"
+                                                         Height="16"
+                                                         Margin="0,0,6,0"
+                                                         Foreground="{DynamicResource IconForegroundBrush}"
+                                                         Kind="FilterCogOutline" />
+                                <TextBlock VerticalAlignment="Center" Text="Edit selection filters" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Style="{DynamicResource CadSectionTitleTextStyle}"
+                           Text="Layer toggle storage" />
+                <Border Margin="0,8,0,18"
+                        Padding="12"
+                        Background="{DynamicResource ElevatedSurfaceBrush}"
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource SurfaceCornerRadius}">
+                    <StackPanel>
+                        <TextBlock Style="{DynamicResource CadCaptionTextStyle}"
+                                   Text="Folder for this project"
+                                   TextWrapping="Wrap" />
+                        <TextBox x:Name="StoragePathTextBox"
+                                 Margin="0,6,0,8"
+                                 AutomationProperties.Name="Layer toggle storage folder"
+                                 Style="{DynamicResource CadTextBoxStyle}" />
+                        <TextBlock x:Name="StorageModeText"
+                                   Margin="0,0,0,10"
+                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                   TextWrapping="Wrap" />
+                        <WrapPanel>
+                            <Button x:Name="SaveStorageButton"
+                                    Margin="0,0,6,0"
+                                    MinWidth="116"
+                                    Style="{DynamicResource CadPrimaryButtonStyle}"
+                                    AutomationProperties.Name="Save custom layer toggle folder"
+                                    Click="SaveStorageButton_Click"
+                                    Content="Save location" />
+                            <Button x:Name="DefaultStorageButton"
+                                    MinWidth="132"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    AutomationProperties.Name="Use the project default layer toggle folder"
+                                    Click="UseDefaultStorageButton_Click"
+                                    Content="Use project default" />
+                        </WrapPanel>
+                        <TextBlock x:Name="StorageStatusText"
+                                   Margin="0,10,0,0"
+                                   AutomationProperties.LiveSetting="Polite"
+                                   Foreground="{DynamicResource SecondaryForegroundBrush}"
+                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Style="{DynamicResource CadSectionTitleTextStyle}"
+                           Text="Keyboard shortcuts" />
+                <Border Margin="0,8,0,0"
+                        Padding="12"
+                        Background="{DynamicResource ElevatedSurfaceBrush}"
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource SurfaceCornerRadius}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Style="{DynamicResource CadBodyTextStyle}" Text="Ctrl-click" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Style="{DynamicResource CadCaptionTextStyle}" Text="Add or remove rows from the selection" />
+                        <TextBlock Grid.Row="1" Margin="0,6,0,0" Style="{DynamicResource CadBodyTextStyle}" Text="Shift-click" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,6,0,0" Style="{DynamicResource CadCaptionTextStyle}" Text="Select a range" />
+                        <TextBlock Grid.Row="2" Margin="0,6,0,0" Style="{DynamicResource CadBodyTextStyle}" Text="Ctrl+A" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,6,0,0" Style="{DynamicResource CadCaptionTextStyle}" Text="Select the current DWG's layers" />
+                        <TextBlock Grid.Row="3" Margin="0,6,0,0" Style="{DynamicResource CadBodyTextStyle}" Text="Esc" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,6,0,0" Style="{DynamicResource CadCaptionTextStyle}" Text="Clear selection and search" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Interop;
 using System.Globalization;
 
 namespace CAD_Manager
@@ -33,6 +34,9 @@ namespace CAD_Manager
 
                     // Create a new window instance
                     _windowInstance = new CADManagerWindow(dwgNodes, uiDoc);
+                    IntPtr revitWindowHandle = commandData.Application.MainWindowHandle;
+                    if (revitWindowHandle != IntPtr.Zero)
+                        new WindowInteropHelper(_windowInstance).Owner = revitWindowHandle;
                     _windowInstance.Closed += (s, e) => _windowInstance = null; // Clear the reference when closed
                     _windowInstance.Show();
                 }

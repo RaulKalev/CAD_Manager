@@ -47,13 +47,18 @@ namespace CAD_Manager.Services
             public string WindowState { get; set; }
         }
 
-        public ThemeManager(Window window, Action<string, bool, bool> notify = null)
+        public ThemeManager(
+            Window window,
+            Action<string, bool, bool> notify = null,
+            string configFilePath = null)
         {
             _window = window;
             _notify = notify;
-            _configFilePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "RK Tools", "CAD Manager", "config.json");
+            _configFilePath = string.IsNullOrWhiteSpace(configFilePath)
+                ? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "RK Tools", "CAD Manager", "config.json")
+                : configFilePath;
             SystemParameters.StaticPropertyChanged += SystemParameters_StaticPropertyChanged;
         }
 
@@ -77,7 +82,7 @@ namespace CAD_Manager.Services
             }
         }
 
-        internal static ResourceDictionary CreateThemeDictionary(bool isDarkMode)
+        public static ResourceDictionary CreateThemeDictionary(bool isDarkMode)
         {
             var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
             var themePath = SystemParameters.HighContrast

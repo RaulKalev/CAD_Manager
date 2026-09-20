@@ -22,19 +22,25 @@ namespace CAD_Manager.Services
 
         private readonly Window _owner;
         private readonly Action<string, bool, bool> _notify;
+        private readonly Action<IReadOnlyList<PresetDwgState>> _applyPresetToUi;
+        private readonly LayerToggleLocationStore _locationStore;
 
         public LayerVisibilityManager(
             Document document,
             ExternalEvent externalEvent,
             VisibilityToggler visibilityToggler,
             Window owner,
-            Action<string, bool, bool> notify)
+            Action<string, bool, bool> notify,
+            Action<IReadOnlyList<PresetDwgState>> applyPresetToUi,
+            LayerToggleLocationStore locationStore = null)
         {
             _document = document;
             _externalEvent = externalEvent;
             _visibilityToggler = visibilityToggler;
             _owner = owner;
             _notify = notify;
+            _applyPresetToUi = applyPresetToUi;
+            _locationStore = locationStore ?? new LayerToggleLocationStore();
         }
 
         private class LayerVisibilityData
@@ -63,27 +69,14 @@ namespace CAD_Manager.Services
         {
             try
             {
-                string path = TryGetActualFilePath(_document);
-
-                if (!string.IsNullOrEmpty(path))
+                string customFolder = _locationStore.Get(GetProjectKey());
+                if (!string.IsNullOrWhiteSpace(customFolder))
                 {
-                    string projectDir = Path.GetDirectoryName(path);
-                    if (Directory.Exists(projectDir))
-                    {
-                        string saveFolder = Path.Combine(projectDir, "LayerToggles");
-                        Directory.CreateDirectory(saveFolder); // Ensure the folder exists
-                        return saveFolder;
-                    }
+                    Directory.CreateDirectory(customFolder);
+                    return Path.GetFullPath(customFolder);
                 }
 
-                // Fallback: use AppData if path was null or directory doesn't exist
-                string projectName = _document.Title ?? "UnknownProject";
-                string fallbackDir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "RK Tools", "CADManager", "LayerToggles", SanitizeFolderName(projectName));
-
-                Directory.CreateDirectory(fallbackDir);
-                return fallbackDir;
+                return GetDefaultProjectSaveFolder();
             }
             catch (Exception ex)
             {
@@ -179,89 +172,198 @@ namespace CAD_Manager.Services
         {
             try
             {
+                if (_visibilityToggler.HasPendingRequest)
+                {
+                    Notify("Another visibility update is already pending in Revit.", false, true);
+                    return;
+                }
+
                 if (!Directory.Exists(folderPath))
                 {
                     Notify($"No saved data was found at {folderPath}", false, true);
                     return;
                 }
 
-                foreach (var dwgNode in dwgNodes)
+                int loadedFileCount = 0;
+                List<PresetDwgState> states = new List<PresetDwgState>();
+                foreach (DWGNode dwgNode in dwgNodes ?? new List<DWGNode>())
                 {
                     string sanitizedDwgName = SanitizeFileName((dwgNode.Name ?? string.Empty).Normalize(NormalizationForm.FormKC));
                     string filePath = Path.Combine(folderPath, $"{sanitizedDwgName}.json");
+                    LayerVisibilityData savedData = null;
 
                     if (File.Exists(filePath))
                     {
                         var savedJson = File.ReadAllText(filePath, Encoding.UTF8);
-                        var savedData = JsonConvert.DeserializeObject<LayerVisibilityData>(savedJson);
-
-                        dwgNode.IsChecked = savedData.Visibility;
-                        dwgNode.IsHalftone = savedData.Halftone ?? false;
-                        
-                        // Load DWG Overrides
-                        dwgNode.LinePattern = savedData.LinePattern;
-                        dwgNode.LineColor = savedData.LineColor;
-                        dwgNode.LineWeight = savedData.LineWeight;
-
-                        if (savedData.Layers != null)
-                        {
-                            foreach (var layerNode in dwgNode.Layers)
-                            {
-                                var key = (layerNode.Name ?? string.Empty).Normalize(NormalizationForm.FormKC);
-                                if (savedData.Layers.TryGetValue(key, out object rawValue))
-                                {
-                                    if (rawValue is bool boolVis)
-                                    {
-                                        // Legacy Format: just visibility boolean
-                                        layerNode.IsChecked = boolVis;
-                                        // Implicitly clears overrides as they remain null
-                                    }
-                                    else if (rawValue != null)
-                                    {
-                                        // Attempt to convert to LayerData (JObject or similar)
-                                        try 
-                                        {
-                                            // Provide robust conversion from JObject
-                                            var layerJson = JsonConvert.SerializeObject(rawValue);
-                                            var layerData = JsonConvert.DeserializeObject<LayerData>(layerJson);
-                                            
-                                            if (layerData != null)
-                                            {
-                                                layerNode.IsChecked = layerData.Visibility;
-                                                layerNode.LinePattern = layerData.LinePattern;
-                                                layerNode.LineColor = layerData.LineColor;
-                                                layerNode.LineWeight = layerData.LineWeight;
-                                            }
-                                        }
-                                        catch
-                                        {
-                                            // Fallback or ignore
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        savedData = JsonConvert.DeserializeObject<LayerVisibilityData>(savedJson);
+                        if (savedData != null)
+                            loadedFileCount++;
                     }
+
+                    List<PresetLayerState> layerStates = (dwgNode.Layers ?? new List<LayerNode>())
+                        .Select(layerNode => CreatePresetLayerState(layerNode, savedData?.Layers))
+                        .ToList();
+
+                    states.Add(new PresetDwgState(
+                        dwgNode.ElementId,
+                        dwgNode.Name,
+                        savedData?.Visibility ?? dwgNode.IsChecked,
+                        savedData?.Halftone ?? dwgNode.IsHalftone,
+                        savedData != null ? savedData.LinePattern : dwgNode.LinePattern,
+                        savedData != null ? savedData.LineColor : dwgNode.LineColor,
+                        savedData != null ? savedData.LineWeight : dwgNode.LineWeight,
+                        layerStates));
                 }
 
-                dwgNodes.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.CurrentCultureIgnoreCase));
-                foreach (var dwgNode in dwgNodes)
+                if (loadedFileCount == 0)
                 {
-                    dwgNode.Layers = dwgNode.Layers.OrderBy(layer => layer.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+                    Notify("No matching layer preset files were found in the selected folder.", false, true);
+                    return;
                 }
 
-                _visibilityToggler.DWGNodes = dwgNodes;
-                _externalEvent.Raise();
+                View activeView = _document.ActiveView;
+                bool submitted = _visibilityToggler.TrySubmitPreset(
+                    _document,
+                    activeView?.Id,
+                    states,
+                    message =>
+                    {
+                        _applyPresetToUi?.Invoke(states);
+                        Notify(message, false, true);
+                    },
+                    message => Notify(message, true, false));
 
-                // If we loaded overrides, we might want to ensure they apply. 
-                // The VisibilityToggler executes DWGVisibilityController, which we will update to handle overrides using the properties we just populated.
+                if (!submitted)
+                {
+                    Notify("The layer preset could not be queued. Refresh and try again.", true, false);
+                    return;
+                }
 
-                Notify("Layer visibility and overrides loaded.", false, true);
+                ExternalEventRequest raiseResult = _externalEvent.Raise();
+                if (raiseResult != ExternalEventRequest.Accepted)
+                {
+                    _visibilityToggler.CancelPendingRequest();
+                    Notify("Revit could not queue the layer preset. Try again when Revit is idle.", true, false);
+                }
             }
             catch (Exception ex)
             {
                 Notify($"Error loading layer visibility: {ex.Message}", true, false);
             }
+        }
+
+        public string GetDefaultProjectSaveFolder()
+        {
+            string path = TryGetActualFilePath(_document);
+
+            if (!string.IsNullOrEmpty(path))
+            {
+                string projectDir = Path.GetDirectoryName(path);
+                if (Directory.Exists(projectDir))
+                {
+                    string saveFolder = Path.Combine(projectDir, "LayerToggles");
+                    Directory.CreateDirectory(saveFolder);
+                    return saveFolder;
+                }
+            }
+
+            string projectName = _document.Title ?? "UnknownProject";
+            string fallbackDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "RK Tools", "CADManager", "LayerToggles", SanitizeFolderName(projectName));
+
+            Directory.CreateDirectory(fallbackDir);
+            return fallbackDir;
+        }
+
+        public bool IsUsingCustomProjectSaveFolder()
+        {
+            return !string.IsNullOrWhiteSpace(_locationStore.Get(GetProjectKey()));
+        }
+
+        public int GetSavedPresetCount()
+        {
+            string folder = GetProjectSaveFolder();
+            return !string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder)
+                ? Directory.GetFiles(folder, "*.json", SearchOption.TopDirectoryOnly).Length
+                : 0;
+        }
+
+        public int ConfigureProjectSaveFolder(string customFolder, bool moveExistingFiles)
+        {
+            string projectKey = GetProjectKey();
+            string currentFolder = GetProjectSaveFolder();
+            string destinationFolder = string.IsNullOrWhiteSpace(customFolder)
+                ? GetDefaultProjectSaveFolder()
+                : Path.GetFullPath(customFolder);
+
+            Directory.CreateDirectory(destinationFolder);
+            int movedFileCount = moveExistingFiles
+                ? LayerToggleLocationStore.MovePresetFiles(currentFolder, destinationFolder)
+                : 0;
+
+            if (string.IsNullOrWhiteSpace(customFolder))
+                _locationStore.Remove(projectKey);
+            else
+                _locationStore.Set(projectKey, destinationFolder);
+
+            return movedFileCount;
+        }
+
+        private string GetProjectKey()
+        {
+            string path = TryGetActualFilePath(_document);
+            if (string.IsNullOrWhiteSpace(path))
+                path = _document.PathName;
+
+            return !string.IsNullOrWhiteSpace(path)
+                ? Path.GetFullPath(path).ToUpperInvariant()
+                : (_document.Title ?? "UnknownProject").Trim().ToUpperInvariant();
+        }
+
+        private static PresetLayerState CreatePresetLayerState(
+            LayerNode layerNode,
+            IDictionary<string, object> savedLayers)
+        {
+            bool visibility = layerNode.IsChecked;
+            string linePattern = layerNode.LinePattern;
+            string lineColor = layerNode.LineColor;
+            int? lineWeight = layerNode.LineWeight;
+
+            string key = (layerNode.Name ?? string.Empty).Normalize(NormalizationForm.FormKC);
+            if (savedLayers != null && savedLayers.TryGetValue(key, out object rawValue))
+            {
+                if (rawValue is bool legacyVisibility)
+                {
+                    visibility = legacyVisibility;
+                }
+                else if (rawValue != null)
+                {
+                    try
+                    {
+                        string layerJson = JsonConvert.SerializeObject(rawValue);
+                        LayerData layerData = JsonConvert.DeserializeObject<LayerData>(layerJson);
+                        if (layerData != null)
+                        {
+                            visibility = layerData.Visibility;
+                            linePattern = layerData.LinePattern;
+                            lineColor = layerData.LineColor;
+                            lineWeight = layerData.LineWeight;
+                        }
+                    }
+                    catch
+                    {
+                        // Preserve the current layer state when one saved entry is malformed.
+                    }
+                }
+            }
+
+            return new PresetLayerState(
+                layerNode.Name,
+                visibility,
+                linePattern,
+                lineColor,
+                lineWeight);
         }
         private string SanitizeFileName(string name)
         {

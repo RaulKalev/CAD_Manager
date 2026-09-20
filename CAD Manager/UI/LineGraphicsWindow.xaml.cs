@@ -1,9 +1,11 @@
 using CAD_Manager.Models;
+using CAD_Manager.Core;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace CAD_Manager.UI
 {
@@ -19,9 +21,19 @@ namespace CAD_Manager.UI
         private bool _patternChanged;
         private bool _weightChanged;
         private System.Drawing.Color _currentColor = System.Drawing.Color.Gray;
+        private DispatcherTimer _statusTimer;
+        private readonly IDialogService _dialogs;
 
         public LineGraphicsWindow(Services.ThemeManager themeManager)
+            : this(themeManager, new Services.SystemDialogService())
         {
+        }
+
+        public LineGraphicsWindow(
+            Services.ThemeManager themeManager,
+            IDialogService dialogs)
+        {
+            _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
             InitializeComponent();
             themeManager?.LoadTheme(this);
             InitializeControls();
@@ -111,11 +123,16 @@ namespace CAD_Manager.UI
             _patternChanged = false;
             _weightChanged = false;
             _isInitializing = false;
-            SetRequestState(false, "Current graphics loaded.");
+            SetRequestState(false, "Current graphics loaded.", false, true);
         }
 
-        public void SetRequestState(bool isPending, string message, bool isError = false)
+        public void SetRequestState(
+            bool isPending,
+            string message,
+            bool isError = false,
+            bool autoDismiss = false)
         {
+            StopStatusTimer();
             _isPending = isPending;
             PatternComboBox.IsEnabled = !isPending;
             WeightComboBox.IsEnabled = !isPending;
@@ -129,14 +146,28 @@ namespace CAD_Manager.UI
                 ? $"Error: {message}"
                 : message ?? string.Empty;
             string brushKey = isError ? "ErrorBrush" : "ForegroundBrush";
-            StatusText.Foreground = (System.Windows.Media.Brush)(TryFindResource(brushKey)
-                ?? System.Windows.Media.Brushes.Black);
+            if (TryFindResource(brushKey) != null)
+                StatusText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+            else
+                StatusText.Foreground = SystemColors.WindowTextBrush;
+            System.Windows.Automation.AutomationProperties.SetLiveSetting(
+                StatusText,
+                isError
+                    ? System.Windows.Automation.AutomationLiveSetting.Assertive
+                    : System.Windows.Automation.AutomationLiveSetting.Polite);
             StatusBorder.Visibility = string.IsNullOrWhiteSpace(message)
                 ? System.Windows.Visibility.Collapsed
                 : System.Windows.Visibility.Visible;
-            StatusDismissButton.Visibility = !isPending && !string.IsNullOrWhiteSpace(message)
+            StatusDismissButton.Visibility = isError && !isPending && !string.IsNullOrWhiteSpace(message)
                 ? System.Windows.Visibility.Visible
                 : System.Windows.Visibility.Collapsed;
+
+            if (autoDismiss && !isPending && !isError && !string.IsNullOrWhiteSpace(message))
+            {
+                _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+                _statusTimer.Tick += StatusTimer_Tick;
+                _statusTimer.Start();
+            }
             UpdateActionState();
         }
 
@@ -155,7 +186,7 @@ namespace CAD_Manager.UI
             _patternChanged = false;
             _weightChanged = false;
             _isInitializing = false;
-            SetRequestState(false, message);
+            SetRequestState(false, message, false, true);
         }
 
         private void InitializeControls()
@@ -201,22 +232,28 @@ namespace CAD_Manager.UI
 
         private void ColorButton_Click(object sender, RoutedEventArgs e)
         {
-            using (System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog
-            {
-                AllowFullOpen = true,
-                FullOpen = true,
-                AnyColor = true,
-                Color = _currentColor
-            })
-            {
-                if (colorDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                    return;
+            _dialogs.PickColor(
+                _currentColor.R,
+                _currentColor.G,
+                _currentColor.B,
+                result =>
+                {
+                    if (result == null || !result.Accepted)
+                        return;
 
-                _currentColor = colorDialog.Color;
-                _colorChanged = true;
-                UpdateColorDisplay();
-                UpdateActionState();
-            }
+                    Action update = () =>
+                    {
+                        _currentColor = System.Drawing.Color.FromArgb(result.Red, result.Green, result.Blue);
+                        _colorChanged = true;
+                        UpdateColorDisplay();
+                        UpdateActionState();
+                    };
+
+                    if (Dispatcher.CheckAccess())
+                        update();
+                    else
+                        Dispatcher.BeginInvoke(update);
+                });
         }
 
         private void UpdateColorDisplay()
@@ -244,7 +281,7 @@ namespace CAD_Manager.UI
         {
             if (!HasUnsavedChanges)
             {
-                SetRequestState(false, "No changes to apply.");
+                SetRequestState(false, "No changes to apply.", false, true);
                 return;
             }
 
@@ -292,7 +329,35 @@ namespace CAD_Manager.UI
         private void StatusDismissButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_isPending)
-                StatusBorder.Visibility = System.Windows.Visibility.Collapsed;
+                HideStatus();
+        }
+
+        private void StatusTimer_Tick(object sender, EventArgs e)
+        {
+            HideStatus();
+        }
+
+        private void HideStatus()
+        {
+            StopStatusTimer();
+            StatusBorder.Visibility = System.Windows.Visibility.Collapsed;
+            StatusDismissButton.Visibility = System.Windows.Visibility.Collapsed;
+        }
+
+        private void StopStatusTimer()
+        {
+            if (_statusTimer == null)
+                return;
+
+            _statusTimer.Stop();
+            _statusTimer.Tick -= StatusTimer_Tick;
+            _statusTimer = null;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            StopStatusTimer();
+            base.OnClosed(e);
         }
 
         private void UpdateActionState()

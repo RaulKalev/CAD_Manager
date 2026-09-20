@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace CAD_Manager.Services
 {
@@ -40,17 +41,35 @@ namespace CAD_Manager.Services
 
             IInputElement returnFocus = Keyboard.FocusedElement;
             T window = createWindow();
+            if (window == null)
+                throw new InvalidOperationException("The window factory returned null.");
+
             window.Owner = _owner;
             _windows[key] = window;
             window.Closed += (sender, args) =>
             {
-                _windows.Remove(key);
+                if (_windows.TryGetValue(key, out Window registeredWindow) &&
+                    ReferenceEquals(registeredWindow, window))
+                {
+                    _windows.Remove(key);
+                }
                 RestoreOwnerFocus(returnFocus);
             };
 
-            initializeWindow?.Invoke(window);
-            window.Show();
-            return window;
+            try
+            {
+                initializeWindow?.Invoke(window);
+                window.Show();
+                window.Activate();
+                return window;
+            }
+            catch
+            {
+                _windows.Remove(key);
+                if (window.IsVisible)
+                    window.Close();
+                throw;
+            }
         }
 
         private void RestoreOwnerFocus(IInputElement returnFocus)
@@ -62,9 +81,15 @@ namespace CAD_Manager.Services
             if (focusElement == null || !focusElement.IsVisible || !focusElement.IsEnabled)
                 return;
 
-            _owner.Activate();
-            focusElement.Focus();
-            Keyboard.Focus(returnFocus);
+            _owner.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_isDisposed || !_owner.IsVisible || !focusElement.IsVisible || !focusElement.IsEnabled)
+                    return;
+
+                _owner.Activate();
+                focusElement.Focus();
+                Keyboard.Focus(returnFocus);
+            }), DispatcherPriority.Input);
         }
 
         public void ApplyToOpenWindows(Action<Window> action)

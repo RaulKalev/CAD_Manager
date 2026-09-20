@@ -1,0 +1,253 @@
+<Window x:Class="CAD_Manager.UI.LayerSelectionFiltersWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="Layer Selection Filters"
+        Width="560"
+        Height="410"
+        MinWidth="500"
+        MinHeight="340"
+        AllowsTransparency="False"
+        Background="{DynamicResource SurfaceBrush}"
+        ShowInTaskbar="False"
+        ResizeMode="CanResize"
+        Style="{DynamicResource CadWindowStyle}"
+        KeyboardNavigation.TabNavigation="Cycle"
+        Loaded="Window_Loaded"
+        WindowStartupLocation="CenterOwner">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      NonClientFrameEdges="None"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="FilterRuleCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Border x:Name="CheckBoxBorder"
+                                    Width="18"
+                                    Height="18"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Background="{DynamicResource ControlSurfaceBrush}"
+                                    BorderBrush="{DynamicResource SeparatorBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="3">
+                                <materialDesign:PackIcon x:Name="CheckIcon"
+                                                         Width="14"
+                                                         Height="14"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center"
+                                                         Foreground="{DynamicResource AccentForegroundBrush}"
+                                                         Kind="Check"
+                                                         Visibility="Collapsed" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CheckBoxBorder" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+                                <Setter TargetName="CheckBoxBorder" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckBoxBorder" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="CheckIcon" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource SurfaceBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{DynamicResource TitleBarMaterialBrush}"
+                BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        AutomationProperties.Name="Close layer selection filters"
+                        Click="CloseButton_Click"
+                        Style="{DynamicResource CadCaptionCloseButtonStyle}"
+                        ToolTip="Close">
+                    <materialDesign:PackIcon Width="14" Height="14" Kind="WindowClose" />
+                </Button>
+                <TextBlock Margin="16,0,8,0"
+                           VerticalAlignment="Center"
+                           Style="{DynamicResource CadSectionTitleTextStyle}"
+                           Text="Layer Selection Filters" />
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="12" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="12" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Style="{DynamicResource CadCaptionTextStyle}"
+                       Text="A layer is selected when its name matches any enabled rule. Matching ignores letter case."
+                       TextWrapping="Wrap" />
+
+            <DataGrid x:Name="RulesDataGrid"
+                      Grid.Row="2"
+                      ItemsSource="{Binding Rules}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserReorderColumns="False"
+                      CanUserResizeRows="False"
+                      HeadersVisibility="Column"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      Style="{DynamicResource CadDataGridStyle}"
+                      ColumnHeaderStyle="{DynamicResource CadDataGridColumnHeaderStyle}"
+                      RowStyle="{DynamicResource CadDataGridRowStyle}"
+                      CellStyle="{DynamicResource CadDataGridCellStyle}"
+                      AutomationProperties.Name="Layer selection filter rules">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="70" Header="Use">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Style="{StaticResource FilterRuleCheckBoxStyle}"
+                                          ToolTip="Enable or disable this rule" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Width="140" Header="Match">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.MatchTypes, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                          Margin="4,2"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding MatchType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Style="{DynamicResource CadComboBoxStyle}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Width="*" Header="Layer name">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Margin="4,2"
+                                         MinHeight="32"
+                                         Padding="8,0"
+                                         VerticalContentAlignment="Center"
+                                         Background="{DynamicResource ControlSurfaceBrush}"
+                                         BorderBrush="{DynamicResource SeparatorBrush}"
+                                         BorderThickness="1"
+                                         CaretBrush="{DynamicResource ForegroundBrush}"
+                                         Foreground="{DynamicResource ForegroundBrush}"
+                                         SelectionBrush="{DynamicResource TextHighlightBrush}"
+                                         Text="{Binding Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Width="48" Header="">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Width="32"
+                                        Height="32"
+                                        Padding="4"
+                                        Style="{DynamicResource CadIconButtonStyle}"
+                                        AutomationProperties.Name="Remove filter rule"
+                                        Click="RemoveRuleButton_Click"
+                                        ToolTip="Remove rule">
+                                    <materialDesign:PackIcon Width="16"
+                                                             Height="16"
+                                                             Foreground="{DynamicResource SecondaryForegroundBrush}"
+                                                             Kind="DeleteOutline" />
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <TextBlock x:Name="StatusText"
+                       Grid.Row="4"
+                       Margin="0,0,0,10"
+                       Foreground="{DynamicResource ErrorBrush}"
+                       AutomationProperties.LiveSetting="Assertive"
+                       TextWrapping="Wrap"
+                       Visibility="Collapsed" />
+
+            <Grid Grid.Row="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="AddRuleButton"
+                        Grid.Column="0"
+                        Height="32"
+                        MinWidth="104"
+                        VerticalAlignment="Center"
+                        Style="{DynamicResource CadButtonStyle}"
+                        AutomationProperties.Name="Add layer selection filter rule"
+                        Click="AddRuleButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Width="16"
+                                                 Height="16"
+                                                 Margin="0,0,6,0"
+                                                 Foreground="{DynamicResource IconForegroundBrush}"
+                                                 Kind="Plus" />
+                        <TextBlock VerticalAlignment="Center" Text="Add rule" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CancelFiltersButton"
+                        Grid.Column="2"
+                        Height="32"
+                        MinWidth="88"
+                        VerticalAlignment="Center"
+                        Style="{DynamicResource CadButtonStyle}"
+                        AutomationProperties.Name="Cancel filter changes"
+                        Click="CloseButton_Click"
+                        Content="Cancel" />
+                <Button x:Name="SaveFiltersButton"
+                        Grid.Column="4"
+                        Height="32"
+                        MinWidth="112"
+                        VerticalAlignment="Center"
+                        Style="{DynamicResource CadPrimaryButtonStyle}"
+                        AutomationProperties.Name="Save layer selection filters"
+                        Click="SaveButton_Click"
+                        Content="Save filters" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

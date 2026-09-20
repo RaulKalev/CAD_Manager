@@ -25,9 +25,9 @@
     <Color x:Key="IconHoverColor">#FFF2F2F5</Color>
     <Color x:Key="IconPressedColor">#FFFFFFFF</Color>
     <Color x:Key="TextHighlightColor">#FF0A84FF</Color>
-    <Color x:Key="AccentColor">#FF0A84FF</Color>
-    <Color x:Key="AccentHoverColor">#FF3395FF</Color>
-    <Color x:Key="AccentPressedColor">#FF0068CC</Color>
+    <Color x:Key="AccentColor">#FF0071E3</Color>
+    <Color x:Key="AccentHoverColor">#FF006EDC</Color>
+    <Color x:Key="AccentPressedColor">#FF005BB5</Color>
     <Color x:Key="AccentForegroundColor">#FFFFFFFF</Color>
     <Color x:Key="FocusColor">#FF4DA3FF</Color>
     <Color x:Key="ErrorColor">#FFFF6961</Color>

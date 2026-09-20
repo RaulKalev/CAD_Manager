@@ -126,7 +126,15 @@
                         <DataGridTextColumn Width="*"
                                             Binding="{Binding Name}"
                                             Header="View name"
-                                            IsReadOnly="True" />
+                                            IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                    <Setter Property="ToolTip" Value="{Binding Name}" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                     </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock x:Name="EmptyStateText"

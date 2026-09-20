@@ -14,6 +14,7 @@ Run this checklist in Revit 2024 and Revit 2026 before merging UI workflow chang
 - Switch views while each secondary window is open.
 - Close and reopen each secondary window; confirm only one instance of each tool is active.
 - Confirm plugin-owned windows never dim or block the Revit window.
+- Close CAD Manager while a visibility, halftone, graphics-read, graphics-write, or Apply to Views request is pending; confirm shutdown remains stable and no stale callback reopens UI.
 
 ## Apply to Views
 
@@ -34,10 +35,20 @@ Run this checklist in Revit 2024 and Revit 2026 before merging UI workflow chang
 ## Notifications and accessibility
 
 - Save, load, browse, refresh, and test a non-matching template; confirm routine results use the main status host.
-- Confirm success statuses dismiss after about six seconds and errors remain until dismissed.
-- Navigate every affected window with Tab and Shift+Tab; confirm focus is visible.
+- Confirm routine statuses dismiss after about 15 seconds, while a view or selection context change restores the context summary immediately.
+- Force an operation failure; confirm the one-line status shows an error icon and text, is announced assertively, remains until dismissed, and restores the context summary after dismissal.
+- Navigate every affected window with Tab and Shift+Tab; confirm focus is visible for keyboard navigation but no blue focus boundary remains after a mouse click.
 - Use Enter for Apply and Escape/Close for non-destructive dismissal.
 - With Narrator enabled, confirm scope, selection counts, pending state, completion, and errors are announced.
+- Disable Windows client-area animations; confirm progress and ComboBox feedback remain understandable without animated transitions.
+
+## Tree state and request safety
+
+- Select DWGs and layers, filter the list, clear the filter, and confirm the same logical items remain selected.
+- Collapse a DWG, refresh, and confirm its expansion state and all selected rows are preserved.
+- Start a visibility or halftone update, then immediately try Save, Load, Browse, and Refresh; confirm each asks you to wait and does not replace queued request data.
+- Load a saved preset and switch views before Revit consumes it; confirm no write occurs and the persistent error explains that the active view changed.
+- Load a saved preset normally; confirm visibility, halftone, pattern, color, and weight are applied as one Revit undo item.
 
 ## Display checks
 

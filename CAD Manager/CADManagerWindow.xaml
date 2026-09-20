@@ -7,9 +7,9 @@
     xmlns:helpers="clr-namespace:CAD_Manager.Helpers"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     Title="CAD Manager"
-    Width="460"
+    Width="464"
     Height="800"
-    MinWidth="420"
+    MinWidth="464"
     MinHeight="500"
     AllowsTransparency="False"
     Background="{DynamicResource SurfaceBrush}"
@@ -59,28 +59,14 @@
                         <StackPanel DockPanel.Dock="Right"
                                     VerticalAlignment="Center"
                                     Orientation="Horizontal">
-                            <Button Margin="8,2,0,2"
-                                    AutomationProperties.Name="Show TreeView keyboard shortcuts"
-                                    AutomationProperties.HelpText="Shows keyboard and multi-selection shortcuts."
-                                    Click="ShowShortcuts_Click"
-                                    VerticalAlignment="Center"
-                                    Style="{DynamicResource CadIconButtonStyle}"
-                                    TabIndex="0"
-                                    ToolTip="Keyboard shortcuts"
-                                    WindowChrome.IsHitTestVisibleInChrome="True">
-                                <materialDesign:PackIcon Width="18"
-                                                         Height="18"
-                                                         Foreground="{DynamicResource IconBrush}"
-                                                         Kind="HelpCircleOutline" />
-                            </Button>
                             <ToggleButton x:Name="PinToggleButton"
-                                          Margin="4,2,0,2"
+                                          Margin="8,2,0,2"
                                           AutomationProperties.Name="Keep CAD Manager on top"
                                           AutomationProperties.HelpText="Keeps this modeless window above Revit while you work."
                                           Click="TogglePin_Click"
                                           VerticalAlignment="Center"
                                           Style="{DynamicResource CadIconToggleButtonStyle}"
-                                          TabIndex="1"
+                                          TabIndex="0"
                                           ToolTip="Keep CAD Manager on top"
                                           WindowChrome.IsHitTestVisibleInChrome="True">
                                 <materialDesign:PackIcon x:Name="PinToggleIcon"
@@ -89,23 +75,20 @@
                                                          Foreground="{DynamicResource IconBrush}"
                                                          Kind="PinOutline" />
                             </ToggleButton>
-                            <ToggleButton x:Name="ThemeToggleButton"
-                                          Margin="4,2,4,2"
-                                          AutomationProperties.Name="Toggle light or dark theme"
-                                          AutomationProperties.HelpText="Switches between light and dark palettes unless Windows High Contrast is active."
-                                          Click="ToggleTheme_Click"
-                                          IsChecked="True"
-                                          VerticalAlignment="Center"
-                                          Style="{DynamicResource CadIconToggleButtonStyle}"
-                                          TabIndex="2"
-                                          ToolTip="Toggle light or dark theme"
-                                          WindowChrome.IsHitTestVisibleInChrome="True">
-                                <materialDesign:PackIcon x:Name="ThemeToggleIcon"
-                                                         Width="16"
-                                                         Height="16"
+                            <Button Margin="4,2,4,2"
+                                    AutomationProperties.Name="Open CAD Manager settings"
+                                    AutomationProperties.HelpText="Opens theme, selection filter, storage, and shortcut settings."
+                                    Click="OpenSettingsButton_Click"
+                                    VerticalAlignment="Center"
+                                    Style="{DynamicResource CadIconButtonStyle}"
+                                    TabIndex="1"
+                                    ToolTip="Settings"
+                                    WindowChrome.IsHitTestVisibleInChrome="True">
+                                <materialDesign:PackIcon Width="18"
+                                                         Height="18"
                                                          Foreground="{DynamicResource IconBrush}"
-                                                         Kind="WeatherNight" />
-                            </ToggleButton>
+                                                         Kind="CogOutline" />
+                            </Button>
                             <Button AutomationProperties.Name="Minimize CAD Manager"
                                     Click="MinimizeWindow_Click"
                                     Style="{DynamicResource CadCaptionButtonStyle}"
@@ -145,7 +128,7 @@
                 <!--  Labeled commands make the available actions scannable without relying on icon recall.  -->
                 <Border Grid.Row="1"
                         Margin="10,10,10,0"
-                        Padding="8"
+                        Padding="8,8,2,8"
                         Background="{DynamicResource TitleBarMaterialBrush}"
                         BorderBrush="{DynamicResource SeparatorBrush}"
                         BorderThickness="1"
@@ -184,6 +167,7 @@
                                 </StackPanel>
                             </Button>
                             <Button x:Name="BrowseButton"
+                                    Margin="0,0,4,0"
                                     Style="{DynamicResource CadButtonStyle}"
                                     TabIndex="5"
                                     AutomationProperties.AccessKey="Alt+B"
@@ -193,6 +177,24 @@
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,6,0" Foreground="{DynamicResource IconForegroundBrush}" Kind="FolderOpenOutline" />
                                     <AccessText VerticalAlignment="Center" Text="_Browse" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ApplyLayerFiltersButton"
+                                    Padding="6,0,17,0"
+                                    Style="{DynamicResource CadButtonStyle}"
+                                    TabIndex="6"
+                                    AutomationProperties.AccessKey="Alt+I"
+                                    AutomationProperties.Name="Select layers matching filters"
+                                    AutomationProperties.HelpText="Replaces the current row selection with visible layers matching the saved rules."
+                                    Click="ApplyLayerFiltersButton_Click"
+                                    ToolTip="Select matching layers">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Width="16"
+                                                             Height="16"
+                                                             Margin="0,0,6,0"
+                                                             Foreground="{DynamicResource IconForegroundBrush}"
+                                                             Kind="FilterCheckOutline" />
+                                    <AccessText VerticalAlignment="Center" Text="Apply F_ilters" />
                                 </StackPanel>
                             </Button>
                         </WrapPanel>
@@ -206,7 +208,7 @@
                             <Button x:Name="ApplyToViewsButton"
                                     Margin="0,0,4,0"
                                     Style="{DynamicResource CadButtonStyle}"
-                                    TabIndex="6"
+                                    TabIndex="7"
                                     AutomationProperties.AccessKey="Alt+V"
                                     AutomationProperties.Name="Apply current settings to views"
                                     Click="ApplyToViewsButton_Click"
@@ -218,7 +220,7 @@
                             </Button>
                             <Button x:Name="RefreshButton"
                                     Style="{DynamicResource CadButtonStyle}"
-                                    TabIndex="7"
+                                    TabIndex="8"
                                     AutomationProperties.AccessKey="Alt+R"
                                     AutomationProperties.Name="Refresh active view"
                                     Click="RefreshButton_Click"
@@ -250,9 +252,10 @@
                             </Grid.ColumnDefinitions>
                             <Grid>
                                 <TextBox x:Name="SearchBox"
-                                         TabIndex="8"
+                                         TabIndex="9"
                                          Padding="10,0"
                                          VerticalContentAlignment="Center"
+                                         FocusVisualStyle="{DynamicResource CadKeyboardFocusVisualStyle}"
                                          AutomationProperties.Name="Search DWGs and layers"
                                          AutomationProperties.AccessKey="Alt+F"
                                          AutomationProperties.HelpText="Type to filter the tree. Press Alt+F to focus search."
@@ -274,7 +277,7 @@
                                     Width="32"
                                     Height="32"
                                     Style="{DynamicResource CadIconButtonStyle}"
-                                    TabIndex="9"
+                                    TabIndex="10"
                                     AutomationProperties.Name="Clear search"
                                     AutomationProperties.HelpText="Clears the current DWG and layer filter."
                                     Click="ClearButton_Click"
@@ -290,20 +293,59 @@
                 <Border
                     x:Name="StatusBorder"
                     Grid.Row="4"
-                    Margin="10,5,10,8"
+                    Margin="10,2,10,4"
                     Background="Transparent"
                     BorderBrush="Transparent"
                     BorderThickness="0"
                     Padding="0"
                     Visibility="Visible">
-                    <TextBlock x:Name="StatusText"
-                               VerticalAlignment="Center"
-                               AutomationProperties.LiveSetting="Polite"
-                               Foreground="{DynamicResource ForegroundBrush}"
-                               Style="{DynamicResource CadCaptionTextStyle}"
-                               Text="Active view  ·  No selection"
-                               TextTrimming="CharacterEllipsis"
-                               TextWrapping="NoWrap" />
+                    <Grid MinHeight="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <materialDesign:PackIcon x:Name="StatusIcon"
+                                                 Width="16"
+                                                 Height="16"
+                                                 VerticalAlignment="Center"
+                                                 AutomationProperties.Name="Error"
+                                                 Foreground="{DynamicResource ErrorBrush}"
+                                                 IsHitTestVisible="False"
+                                                 Kind="AlertCircleOutline"
+                                                 Visibility="Collapsed" />
+                        <TextBlock x:Name="StatusText"
+                                   Grid.Column="2"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.Name="CAD Manager status and current context"
+                                   AutomationProperties.LiveSetting="Polite"
+                                   Foreground="{DynamicResource ForegroundBrush}"
+                                   Style="{DynamicResource CadCaptionTextStyle}"
+                                   Text="Active view  ·  No selection"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="NoWrap" />
+                        <Button x:Name="StatusDismissButton"
+                                Grid.Column="4"
+                                Width="20"
+                                Height="20"
+                                MinWidth="20"
+                                MinHeight="20"
+                                Padding="3"
+                                Style="{DynamicResource CadIconButtonStyle}"
+                                    TabIndex="12"
+                                AutomationProperties.Name="Dismiss error"
+                                AutomationProperties.HelpText="Dismisses the current error and restores the active view and selection summary."
+                                Click="StatusDismissButton_Click"
+                                ToolTip="Dismiss error"
+                                Visibility="Collapsed">
+                            <materialDesign:PackIcon Width="14"
+                                                     Height="14"
+                                                     Foreground="{DynamicResource SecondaryForegroundBrush}"
+                                                     Kind="Close" />
+                        </Button>
+                    </Grid>
                 </Border>
                 <Border
                     Grid.Row="3"
@@ -323,7 +365,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         Focusable="True"
-                        TabIndex="11"
+                        TabIndex="13"
                         AutomationProperties.Name="DWGs and layers"
                         AutomationProperties.HelpText="Use arrows to navigate, Space to toggle visibility, and Ctrl or Shift for multi-selection."
                         Foreground="{DynamicResource IconBrush}"
@@ -336,8 +378,10 @@
                             <Style TargetType="TreeViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                <Setter Property="MinHeight" Value="36" />
+                                <Setter Property="MinHeight" Value="24" />
+                                <Setter Property="Margin" Value="0" />
                                 <Setter Property="Padding" Value="0" />
+                                <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
                                 <EventSetter Event="Loaded" Handler="TreeViewItem_Loaded" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
@@ -347,9 +391,10 @@
                             </Style>
 
                             <Style x:Key="TreeVisibilityToggleStyle" TargetType="CheckBox">
-                                <Setter Property="Width" Value="32" />
-                                <Setter Property="Height" Value="32" />
+                                <Setter Property="Width" Value="24" />
+                                <Setter Property="Height" Value="24" />
                                 <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="CheckBox">
@@ -387,9 +432,10 @@
                             </Style>
 
                             <Style x:Key="TreeHalftoneToggleStyle" TargetType="ToggleButton">
-                                <Setter Property="Width" Value="32" />
-                                <Setter Property="Height" Value="32" />
+                                <Setter Property="Width" Value="24" />
+                                <Setter Property="Height" Value="24" />
                                 <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="ToggleButton">
@@ -433,24 +479,17 @@
                             <Style x:Key="TreeGraphicsButtonStyle"
                                    BasedOn="{StaticResource CadIconButtonStyle}"
                                    TargetType="Button">
-                                <Setter Property="Width" Value="32" />
-                                <Setter Property="Height" Value="32" />
+                                <Setter Property="Width" Value="24" />
+                                <Setter Property="Height" Value="24" />
+                                <Setter Property="MinWidth" Value="24" />
+                                <Setter Property="MinHeight" Value="24" />
+                                <Setter Property="Padding" Value="0" />
                                 <Setter Property="ToolTip" Value="Edit line graphics" />
                             </Style>
 
                             <HierarchicalDataTemplate DataType="{x:Type models:DWGNode}" ItemsSource="{Binding Layers}">
-                                <Border Padding="4,2" CornerRadius="{DynamicResource ControlCornerRadius}">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="Transparent" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <Grid MinHeight="32">
+                                <Border Padding="0" Background="Transparent">
+                                    <Grid MinHeight="24">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
@@ -511,16 +550,13 @@
                                                 Tag="{Binding}">
                                             <materialDesign:PackIcon Width="18" Height="18" Foreground="{DynamicResource IconBrush}" Kind="Palette" Opacity="0.75" />
                                         </Button>
-                                        <StackPanel Grid.Column="4" Margin="6,0,2,0" VerticalAlignment="Center">
-                                            <TextBlock Style="{DynamicResource CadCaptionTextStyle}"
-                                                       AutomationProperties.LiveSetting="Polite"
-                                                       Text="Updating visibility…"
-                                                       Visibility="{Binding IsVisibilityPending, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                            <TextBlock Style="{DynamicResource CadCaptionTextStyle}"
-                                                       AutomationProperties.LiveSetting="Polite"
-                                                       Text="Updating halftone…"
-                                                       Visibility="{Binding IsHalftonePending, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                        </StackPanel>
+                                        <TextBlock Grid.Column="4"
+                                                   Margin="6,0,2,0"
+                                                   VerticalAlignment="Center"
+                                                   Style="{DynamicResource CadRowStatusTextStyle}"
+                                                   AutomationProperties.LiveSetting="Polite"
+                                                   Text="Pending"
+                                                   Visibility="{Binding IsVisibilityPending, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                         <TextBlock Grid.Row="1"
                                                    Grid.Column="1"
                                                    Grid.ColumnSpan="4"
@@ -535,18 +571,8 @@
                             </HierarchicalDataTemplate>
 
                             <DataTemplate DataType="{x:Type models:LayerNode}">
-                                <Border Padding="4,2" CornerRadius="{DynamicResource ControlCornerRadius}">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="Transparent" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <Grid MinHeight="32">
+                                <Border Padding="0" Background="Transparent">
+                                    <Grid MinHeight="24">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
@@ -593,8 +619,8 @@
                                         <TextBlock Grid.Column="3"
                                                    Margin="6,0,2,0"
                                                    VerticalAlignment="Center"
-                                                   Style="{DynamicResource CadCaptionTextStyle}"
-                                                   Text="Updating visibility…"
+                                                   Style="{DynamicResource CadRowStatusTextStyle}"
+                                                   Text="Pending"
                                                    Visibility="{Binding IsVisibilityPending, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                         <TextBlock Grid.Row="1"
                                                    Grid.Column="1"

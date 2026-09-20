@@ -12,6 +12,26 @@
         <Setter Property="SnapsToDevicePixels" Value="True" />
     </Style>
 
+    <!--
+        WPF only displays FocusVisualStyle for keyboard-initiated focus. This
+        keeps keyboard location visible without leaving a focus ring behind
+        after ordinary pointer clicks.
+    -->
+    <Style x:Key="CadKeyboardFocusVisualStyle" TargetType="{x:Type Control}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Control}">
+                    <Rectangle Margin="2"
+                               RadiusX="5"
+                               RadiusY="5"
+                               Stroke="{DynamicResource FocusBrush}"
+                               StrokeThickness="2"
+                               SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="CadWindowTitleTextStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{DynamicResource InterfaceDisplayFontFamily}" />
         <Setter Property="FontSize" Value="{DynamicResource WindowTitleFontSize}" />
@@ -30,7 +50,7 @@
     <!-- Sentinel-style custom caption: Windows placement and sizing with theme-aware material states. -->
     <Style x:Key="CadCaptionButtonStyle" TargetType="{x:Type Button}">
         <Setter Property="Width" Value="46" />
-        <Setter Property="Height" Value="36" />
+        <Setter Property="Height" Value="40" />
         <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
@@ -95,6 +115,14 @@
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
+    <Style x:Key="CadRowStatusTextStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{DynamicResource InterfaceFontFamily}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+
     <Style x:Key="CadButtonStyle" TargetType="{x:Type Button}">
         <Setter Property="MinHeight" Value="{DynamicResource ControlHeight}" />
         <Setter Property="MinWidth" Value="{DynamicResource MinimumPointerTarget}" />
@@ -106,6 +134,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
@@ -128,8 +157,10 @@
                             <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ControlPressedBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
-                            <Setter Property="Opacity" Value="0.62" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ControlSurfaceBrush}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SeparatorBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
+                            <Setter Property="Opacity" Value="1" />
                             <Setter Property="Cursor" Value="Arrow" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -166,8 +197,10 @@
                             <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource AccentPressedBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
-                            <Setter Property="Opacity" Value="0.62" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ControlSurfaceBrush}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SeparatorBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
+                            <Setter Property="Opacity" Value="1" />
                             <Setter Property="Cursor" Value="Arrow" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -202,6 +235,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Foreground" Value="{DynamicResource IconBrush}" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
@@ -222,6 +256,11 @@
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource SelectionBrush}" />
                         </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                            <Setter Property="Opacity" Value="0.62" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -236,7 +275,39 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
         <Setter Property="CaretBrush" Value="{DynamicResource ForegroundBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource TextHighlightBrush}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBox}">
+                    <Border x:Name="TextBoxBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{DynamicResource ControlCornerRadius}"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      Background="Transparent"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="TextBoxBorder" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="TextBoxBorder" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="TextBoxBorder" Property="Opacity" Value="0.62" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="CadComboBoxStyle" TargetType="{x:Type ComboBox}">
@@ -248,6 +319,7 @@
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
         <Setter Property="ItemContainerStyle" Value="{DynamicResource CadComboBoxItemStyle}" />
         <Setter Property="Template">
             <Setter.Value>
@@ -315,7 +387,7 @@
                                IsOpen="{TemplateBinding IsDropDownOpen}"
                                Placement="Bottom"
                                PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                               PopupAnimation="Slide"
+                               PopupAnimation="None"
                                VerticalOffset="2">
                             <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                     Background="{DynamicResource ElevatedSurfaceBrush}"
@@ -345,6 +417,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
         <Setter Property="Background" Value="{DynamicResource ElevatedSurfaceBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ComboBoxItem}">
@@ -392,6 +465,7 @@
         <Setter Property="AlternatingRowBackground" Value="{DynamicResource ElevatedSurfaceBrush}" />
         <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource SeparatorBrush}" />
         <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource SeparatorBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
     </Style>
 
     <Style x:Key="CadDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
@@ -410,6 +484,7 @@
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SeparatorBrush}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource CadKeyboardFocusVisualStyle}" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />

@@ -45,5 +45,18 @@ namespace CAD_Manager.Helpers
             // DO NOT call id.IntegerValue directly to avoid MissingMethodException on new versions (JIT validation).
             return -1;
         }
+
+        public static ElementId FromIdValue(long value)
+        {
+            ConstructorInfo longConstructor = typeof(ElementId).GetConstructor(new[] { typeof(long) });
+            if (longConstructor != null)
+                return (ElementId)longConstructor.Invoke(new object[] { value });
+
+            ConstructorInfo intConstructor = typeof(ElementId).GetConstructor(new[] { typeof(int) });
+            if (intConstructor == null || value < int.MinValue || value > int.MaxValue)
+                return ElementId.InvalidElementId;
+
+            return (ElementId)intConstructor.Invoke(new object[] { (int)value });
+        }
     }
 }

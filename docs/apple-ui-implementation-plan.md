@@ -36,7 +36,7 @@ The implementation should reduce presentation responsibilities in `CADManagerWin
 
 ## Implementation status
 
-Started:
+Code-complete for phases 1, 2, 4, 5, and 6; Revit-hosted validation remains:
 
 - Added a single-instance `WindowCoordinator` for modeless secondary windows.
 - Converted Apply to Views from `ShowDialog()`/`DialogResult` to a modeless request event.
@@ -80,12 +80,24 @@ Started:
 - Added keyboard access keys for primary commands plus Alt+F search focus in the main window.
 - Added a live Windows High Contrast theme based on system colors and propagated system contrast changes to every open modeless tool.
 - Suppressed nonessential indeterminate progress motion when Windows client-area animations are disabled.
+- Added keyboard-only focus adorners to shared buttons, icon toggles, inputs, ComboBoxes, DataGrids, TreeView rows, and row actions without leaving a mouse-click focus ring behind.
+- Removed the remaining ComboBox popup animation so reduced-motion behavior is immediate and deterministic.
+- Made routine status messages explicitly time-limited to 15 seconds while keeping errors persistent, dismissible, and assertive for assistive technology.
+- Added a non-color error icon and dismiss action to the main one-line context/status row.
+- Preserved tree selection and expansion through refresh, and preserved selection while the search filter changes.
+- Replaced preset loading's mutable compatibility path with an immutable, single-pending external-event request validated against the active document and view; bound rows synchronize only after the Revit transaction succeeds.
+- Guarded save, load, browse, and refresh while visibility or halftone changes are pending.
+- Tightened modeless-window registration, cleanup, activation, and deferred focus restoration.
+- Removed stale custom-title-bar project entries and eliminated the last runtime popup click subscriptions.
+- Audited the core palette contrast; primary/secondary text and accent-button text now meet the plan's normal-text contrast target in light and dark themes.
 
-Next implementation slice:
+Remaining validation slice:
 
 - Run the Revit 2024 keyboard/Narrator and 100%, 150%, and 200% display-scaling matrix, including longer localized labels.
-- Add only restrained, interruptible feedback motion after the accessibility matrix passes.
-- Keep all motion optional and instantaneous when Windows client-area animations are disabled.
+- Run the equivalent Revit 2026 matrix when Revit 2026 API/runtime assemblies are available on the test machine.
+- Verify the saved-preset, document/view-switch, and request-cancellation cases in a live Revit host.
+
+Phases 7 (optional restrained motion) and 8 (longer-term coupling reduction) remain deliberately separate from this completion pass. Motion should only be considered after the accessibility matrix passes.
 
 ## Delivery sequence
 

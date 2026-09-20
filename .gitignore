@@ -1,0 +1,26 @@
+# IDE and user state
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build output (kept locally, never versioned)
+**/bin/
+**/obj/
+TestResults/
+artifacts/
+*.nupkg
+*.snupkg
+
+# WPF/MSBuild temporary projects
+*_wpftmp.csproj
+*.wpftmp.csproj
+
+# Local build staging
+.tmp-build/
+_build_release_alt/
+
+# Generated test and architecture output
+Tests/UiHarness/out/
+graphify-out/

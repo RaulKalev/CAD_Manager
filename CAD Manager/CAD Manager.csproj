@@ -27,6 +27,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Include="..\CAD Manager.Core\Dialogs.cs" Link="Core\Dialogs.cs" />
+		<Compile Include="..\CAD Manager.Core\LayerSelectionFilters.cs" Link="Core\LayerSelectionFilters.cs" />
+		<Compile Include="..\CAD Manager.Core\OperationStatusState.cs" Link="Core\OperationStatusState.cs" />
+		<Compile Include="..\CAD Manager.Core\SelectionController.cs" Link="Core\SelectionController.cs" />
+		<Compile Include="..\CAD Manager.Core\ViewSelectionState.cs" Link="Core\ViewSelectionState.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
@@ -75,9 +83,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Update="CustomTitleBar.xaml.cs">
-			<SubType>Code</SubType>
-		</Compile>
 		<Compile Update="Properties\Settings.Designer.cs">
 		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
 		  <AutoGen>True</AutoGen>
@@ -91,12 +96,5 @@
 	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
 	  </None>
 	</ItemGroup>
-
-	<ItemGroup>
-		<Page Update="CustomTitleBar.xaml">
-			<SubType>Designer</SubType>
-		</Page>
-	</ItemGroup>
-
 
 </Project>

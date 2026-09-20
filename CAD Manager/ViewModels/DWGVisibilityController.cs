@@ -211,72 +211,133 @@ namespace CAD_Manager.ViewModels
         }
 
         /// <summary>
+        /// Applies an immutable preset snapshot captured before the external
+        /// event was raised. The queued operation therefore cannot be changed
+        /// by later UI edits.
+        /// </summary>
+        public void ApplyVisibility(IReadOnlyList<PresetDwgState> dwgStates)
+        {
+            ElementId templateId = _view.ViewTemplateId;
+            View targetView = templateId != ElementId.InvalidElementId
+                ? _document.GetElement(templateId) as View ?? _view
+                : _view;
+
+            using (Transaction transaction = new Transaction(_document, "Apply DWG Visibility Preset"))
+            {
+                transaction.Start();
+
+                foreach (PresetDwgState state in dwgStates ?? new List<PresetDwgState>())
+                {
+                    ImportInstance importInstance = FindImportInstance(state);
+                    if (importInstance?.Category == null)
+                        continue;
+
+                    SetCategoryProperties(
+                        targetView,
+                        importInstance.Category,
+                        state.IsVisible,
+                        state.LinePattern,
+                        state.LineColor,
+                        state.LineWeight,
+                        state.IsHalftone);
+
+                    foreach (PresetLayerState layer in state.Layers)
+                    {
+                        Category layerCategory = FindLayerCategory(importInstance, layer.Name);
+                        if (layerCategory == null)
+                            continue;
+
+                        SetCategoryProperties(
+                            targetView,
+                            layerCategory,
+                            layer.IsVisible,
+                            layer.LinePattern,
+                            layer.LineColor,
+                            layer.LineWeight,
+                            false);
+                    }
+                }
+
+                transaction.Commit();
+            }
+        }
+
+        /// <summary>
         /// Sets visibility and graphic overrides for a specific category.
         /// </summary>
         private void SetCategoryProperties(View view, Category category, bool isVisible, object node)
         {
+            string patternName = null;
+            string colorHex = null;
+            int? weight = null;
+            bool isHalftone = false;
+
+            if (node is DWGNode dwg)
+            {
+                patternName = dwg.LinePattern;
+                colorHex = dwg.LineColor;
+                weight = dwg.LineWeight;
+                isHalftone = dwg.IsHalftone;
+            }
+            else if (node is LayerNode layer)
+            {
+                patternName = layer.LinePattern;
+                colorHex = layer.LineColor;
+                weight = layer.LineWeight;
+            }
+
+            SetCategoryProperties(
+                view,
+                category,
+                isVisible,
+                patternName,
+                colorHex,
+                weight,
+                isHalftone);
+        }
+
+        private void SetCategoryProperties(
+            View view,
+            Category category,
+            bool isVisible,
+            string patternName,
+            string colorHex,
+            int? weight,
+            bool isHalftone)
+        {
             try
             {
-                if (category == null) return;
+                if (category == null)
+                    return;
 
-                // 1. Visibility
                 view.SetCategoryHidden(category.Id, !isVisible);
-
-                // 2. Graphic Overrides - Create NEW settings to ensure "No Value = No Override"
-                string patternName = null;
-                string colorHex = null;
-                int? weight = null;
-
-                if (node is DWGNode dwg)
-                {
-                    patternName = dwg.LinePattern;
-                    colorHex = dwg.LineColor;
-                    weight = dwg.LineWeight;
-                }
-                else if (node is LayerNode layer)
-                {
-                    patternName = layer.LinePattern;
-                    colorHex = layer.LineColor;
-                    weight = layer.LineWeight;
-                }
-
-                // Create NEW settings to ensure "No Value = No Override" is enforced strictly
                 OverrideGraphicSettings newSettings = new OverrideGraphicSettings();
-                
-                // Color
+
                 if (!string.IsNullOrEmpty(colorHex))
                 {
-                    var c = ParseColorHex(colorHex);
-                    if (c != null) newSettings.SetProjectionLineColor(c);
+                    Autodesk.Revit.DB.Color color = ParseColorHex(colorHex);
+                    if (color != null)
+                        newSettings.SetProjectionLineColor(color);
                 }
 
-                // Weight
                 if (weight.HasValue && weight.Value > 0)
-                {
                     newSettings.SetProjectionLineWeight(weight.Value);
-                }
 
-                // Pattern
                 if (!string.IsNullOrEmpty(patternName))
                 {
-                    ElementId patId = GetPatternId(patternName);
-                    if (patId != ElementId.InvalidElementId)
-                    {
-                        newSettings.SetProjectionLinePatternId(patId);
-                    }
+                    ElementId patternId = GetPatternId(patternName);
+                    if (patternId != ElementId.InvalidElementId)
+                        newSettings.SetProjectionLinePatternId(patternId);
                 }
 
-                // Halftone (if available on node? DWGNode has it. LayerNode doesn't usually, but maybe inherited?)
-                if (node is DWGNode dNode && dNode.IsHalftone)
-                {
+                if (isHalftone)
                     newSettings.SetHalftone(true);
-                }
 
                 view.SetCategoryOverrides(category.Id, newSettings);
             }
             catch
             {
-                // Handle unmodifiable categories
+                // Skip categories that cannot be modified in the target view.
             }
         }
 
@@ -329,6 +390,18 @@ namespace CAD_Manager.ViewModels
             }
 
             return null;
+        }
+
+        private ImportInstance FindImportInstance(PresetDwgState state)
+        {
+            if (state?.ImportInstanceId != null && state.ImportInstanceId != ElementId.InvalidElementId)
+            {
+                ImportInstance byId = _document.GetElement(state.ImportInstanceId) as ImportInstance;
+                if (byId != null)
+                    return byId;
+            }
+
+            return FindImportInstanceByName(state?.Name);
         }
         /// <summary>
         /// Finds a layer category by name.

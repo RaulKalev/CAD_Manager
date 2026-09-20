@@ -30,7 +30,8 @@ namespace CAD_Manager.ViewModels
             VisibilityToggler visibilityToggler,
             Action refreshTreeView,
             Window owner,
-            Action<string, bool, bool> notify)
+            Action<string, bool, bool> notify,
+            Action<IReadOnlyList<PresetDwgState>> applyPresetToUi)
         {
             _uiDoc = uiDoc;
             _externalEvent = externalEvent;
@@ -42,7 +43,8 @@ namespace CAD_Manager.ViewModels
                 _externalEvent,
                 _visibilityToggler,
                 _owner,
-                _notify);
+                _notify,
+                applyPresetToUi);
             _refreshTreeView = refreshTreeView;
         }
         public void LoadButton_Click(object sender, RoutedEventArgs e)
@@ -65,7 +67,6 @@ namespace CAD_Manager.ViewModels
 
             // ✅ Correct load
             _layerVisibilityManager.LoadLayerVisibility(matchingTemplateFolder, _visibilityToggler.DWGNodes);
-            _refreshTreeView();
         }
 
         public void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -118,7 +119,6 @@ namespace CAD_Manager.ViewModels
                 string folderPath = Path.GetDirectoryName(filePath); // ✅ get folder
 
                 _layerVisibilityManager.LoadLayerVisibility(folderPath, _visibilityToggler.DWGNodes);
-                _refreshTreeView();
             }
         }
 
@@ -142,7 +142,6 @@ namespace CAD_Manager.ViewModels
                     if (_layerVisibilityManager.DoesFileMatch(selectedFile, _visibilityToggler.DWGNodes))
                     {
                         _layerVisibilityManager.LoadLayerVisibility(selectedFile, _visibilityToggler.DWGNodes);
-                        _refreshTreeView();
                         isValidFile = true;
                     }
                     else
@@ -162,10 +161,10 @@ namespace CAD_Manager.ViewModels
             Document doc = _uiDoc.Document;
             View currentView = doc.ActiveView;
 
-            // Recollect DWGNodes
-            // Recollect DWGNodes
+            List<DWGNode> previousNodes = _visibilityToggler.DWGNodes ?? new List<DWGNode>();
             var dataService = new DWGDataService();
             List<DWGNode> updatedDwgNodes = dataService.CollectDWGNodes(doc, currentView);
+            RestoreInteractionState(previousNodes, updatedDwgNodes);
 
             // Update shared data
             _visibilityToggler.DWGNodes = updatedDwgNodes;
@@ -184,12 +183,69 @@ namespace CAD_Manager.ViewModels
             // Replace the original DWGNodes list (used for UI filtering)
             if (_refreshTreeView.Target is CADManagerWindow window)
             {
-                window.DWGNodes = updatedDwgNodes;
-                window.FilteredDWGNodes = updatedDwgNodes;
+                window.ReplaceDWGNodes(updatedDwgNodes);
+                return;
             }
 
             // Refresh the TreeView UI
             _refreshTreeView.Invoke();
+        }
+
+        public string GetLayerToggleFolder()
+        {
+            return _layerVisibilityManager.GetProjectSaveFolder();
+        }
+
+        public string GetDefaultLayerToggleFolder()
+        {
+            return _layerVisibilityManager.GetDefaultProjectSaveFolder();
+        }
+
+        public bool IsUsingCustomLayerToggleFolder()
+        {
+            return _layerVisibilityManager.IsUsingCustomProjectSaveFolder();
+        }
+
+        public int GetSavedLayerToggleCount()
+        {
+            return _layerVisibilityManager.GetSavedPresetCount();
+        }
+
+        public int ConfigureLayerToggleFolder(string customFolder, bool moveExistingFiles)
+        {
+            return _layerVisibilityManager.ConfigureProjectSaveFolder(customFolder, moveExistingFiles);
+        }
+
+        private static void RestoreInteractionState(
+            IEnumerable<DWGNode> previousNodes,
+            IEnumerable<DWGNode> updatedNodes)
+        {
+            List<DWGNode> previous = (previousNodes ?? Enumerable.Empty<DWGNode>()).ToList();
+            foreach (DWGNode updated in updatedNodes ?? Enumerable.Empty<DWGNode>())
+            {
+                DWGNode prior = previous.FirstOrDefault(candidate => SameDwg(candidate, updated));
+                if (prior == null)
+                    continue;
+
+                updated.IsSelected = prior.IsSelected;
+                updated.IsExpanded = prior.IsExpanded;
+
+                foreach (LayerNode updatedLayer in updated.Layers ?? new List<LayerNode>())
+                {
+                    LayerNode priorLayer = (prior.Layers ?? new List<LayerNode>()).FirstOrDefault(candidate =>
+                        string.Equals(candidate.Name, updatedLayer.Name, StringComparison.CurrentCultureIgnoreCase));
+                    if (priorLayer != null)
+                        updatedLayer.IsSelected = priorLayer.IsSelected;
+                }
+            }
+        }
+
+        private static bool SameDwg(DWGNode first, DWGNode second)
+        {
+            if (first?.ElementId != null && second?.ElementId != null)
+                return first.ElementId.GetIdValue() == second.ElementId.GetIdValue();
+
+            return string.Equals(first?.Name, second?.Name, StringComparison.CurrentCultureIgnoreCase);
         }
 
         private void Notify(string message, bool isError, bool autoDismiss)

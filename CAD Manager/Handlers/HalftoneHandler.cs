@@ -16,6 +16,17 @@ namespace CAD_Manager.Handlers
         public Document Document { get; set; }
         public View CurrentView { get; set; }
 
+        public bool HasPendingRequest
+        {
+            get
+            {
+                lock (_requestLock)
+                {
+                    return _pendingRequest != null;
+                }
+            }
+        }
+
         public bool TrySubmit(
             Document document,
             ElementId viewId,

@@ -14,11 +14,23 @@ namespace CAD_Manager.Handlers
     {
         private readonly object _requestLock = new object();
         private VisibilityRequest _pendingRequest;
+        private PresetVisibilityRequest _pendingPresetRequest;
 
         // Retained for preset save/load and refresh workflows. Direct row changes use immutable requests.
         public List<DWGNode> DWGNodes { get; set; }
         public Document Document { get; set; }
         public View CurrentView { get; set; }
+
+        public bool HasPendingRequest
+        {
+            get
+            {
+                lock (_requestLock)
+                {
+                    return _pendingRequest != null || _pendingPresetRequest != null;
+                }
+            }
+        }
 
         public bool TrySubmit(
             Document document,
@@ -37,10 +49,53 @@ namespace CAD_Manager.Handlers
 
             lock (_requestLock)
             {
-                if (_pendingRequest != null)
+                if (_pendingRequest != null || _pendingPresetRequest != null)
                     return false;
 
                 _pendingRequest = new VisibilityRequest(document, viewId, targetList, onComplete, onError);
+                return true;
+            }
+        }
+
+        public bool TrySubmitPreset(
+            Document document,
+            ElementId viewId,
+            IEnumerable<PresetDwgState> states,
+            Action<string> onComplete,
+            Action<string> onError)
+        {
+            List<PresetDwgState> stateList = (states ?? Enumerable.Empty<PresetDwgState>())
+                .Where(state => state != null)
+                .Select(state => new PresetDwgState(
+                    state.ImportInstanceId,
+                    state.Name,
+                    state.IsVisible,
+                    state.IsHalftone,
+                    state.LinePattern,
+                    state.LineColor,
+                    state.LineWeight,
+                    state.Layers.Select(layer => new PresetLayerState(
+                        layer.Name,
+                        layer.IsVisible,
+                        layer.LinePattern,
+                        layer.LineColor,
+                        layer.LineWeight))))
+                .ToList();
+
+            if (document == null || viewId == null || viewId == ElementId.InvalidElementId || stateList.Count == 0)
+                return false;
+
+            lock (_requestLock)
+            {
+                if (_pendingRequest != null || _pendingPresetRequest != null)
+                    return false;
+
+                _pendingPresetRequest = new PresetVisibilityRequest(
+                    document,
+                    viewId,
+                    stateList,
+                    onComplete,
+                    onError);
                 return true;
             }
         }
@@ -50,15 +105,18 @@ namespace CAD_Manager.Handlers
             lock (_requestLock)
             {
                 _pendingRequest = null;
+                _pendingPresetRequest = null;
             }
         }
 
         public void Execute(UIApplication app)
         {
             VisibilityRequest request;
+            PresetVisibilityRequest presetRequest;
             lock (_requestLock)
             {
                 request = _pendingRequest;
+                presetRequest = _pendingPresetRequest;
             }
 
             if (request != null)
@@ -67,12 +125,36 @@ namespace CAD_Manager.Handlers
                 return;
             }
 
-            // Compatibility path for loading a complete saved preset.
-            if (DWGNodes == null || Document == null || CurrentView == null)
-                return;
+            if (presetRequest != null)
+                ExecutePresetRequest(app, presetRequest);
+        }
 
-            DWGVisibilityController controller = new DWGVisibilityController(Document, CurrentView);
-            controller.ApplyVisibility(DWGNodes);
+        private void ExecutePresetRequest(UIApplication app, PresetVisibilityRequest request)
+        {
+            Document document = app?.ActiveUIDocument?.Document;
+            View activeView = document?.ActiveView;
+            if (document == null || request.Document == null || !document.Equals(request.Document))
+            {
+                Complete(request, false, "The document changed before the preset could be applied.");
+                return;
+            }
+
+            if (activeView == null || activeView.Id.GetIdValue() != request.ViewId.GetIdValue())
+            {
+                Complete(request, false, "The active view changed. Refresh CAD Manager and try again.");
+                return;
+            }
+
+            try
+            {
+                DWGVisibilityController controller = new DWGVisibilityController(document, activeView);
+                controller.ApplyVisibility(request.States);
+                Complete(request, true, "Layer visibility and overrides loaded.");
+            }
+            catch (Exception ex)
+            {
+                Complete(request, false, $"Failed to apply the layer preset: {ex.Message}");
+            }
         }
 
         private void ExecuteRequest(UIApplication app, VisibilityRequest request)
@@ -173,6 +255,21 @@ namespace CAD_Manager.Handlers
                 request.OnError?.Invoke(message);
         }
 
+        private void Complete(PresetVisibilityRequest request, bool succeeded, string message)
+        {
+            lock (_requestLock)
+            {
+                if (!ReferenceEquals(_pendingPresetRequest, request))
+                    return;
+                _pendingPresetRequest = null;
+            }
+
+            if (succeeded)
+                request.OnComplete?.Invoke(message);
+            else
+                request.OnError?.Invoke(message);
+        }
+
         public string GetName()
         {
             return "DWG Visibility Toggler";
@@ -209,6 +306,29 @@ namespace CAD_Manager.Handlers
             public Document Document { get; }
             public ElementId ViewId { get; }
             public List<VisibilityChangeTarget> Targets { get; }
+            public Action<string> OnComplete { get; }
+            public Action<string> OnError { get; }
+        }
+
+        private sealed class PresetVisibilityRequest
+        {
+            public PresetVisibilityRequest(
+                Document document,
+                ElementId viewId,
+                List<PresetDwgState> states,
+                Action<string> onComplete,
+                Action<string> onError)
+            {
+                Document = document;
+                ViewId = viewId;
+                States = states;
+                OnComplete = onComplete;
+                OnError = onError;
+            }
+
+            public Document Document { get; }
+            public ElementId ViewId { get; }
+            public IReadOnlyList<PresetDwgState> States { get; }
             public Action<string> OnComplete { get; }
             public Action<string> OnError { get; }
         }

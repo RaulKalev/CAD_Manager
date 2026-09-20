@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace CAD_Manager.Helpers
 {
@@ -50,52 +47,6 @@ namespace CAD_Manager.Helpers
                         .ToList()
                 })
                 .ToList();
-        }
-        /// <summary>
-        /// Handles the behavior when the search box gains focus.
-        /// </summary>
-        public static void HandleSearchBoxGotFocus(TextBox searchBox)
-        {
-            if (searchBox == null) return;
-
-            searchBox.Text = string.Empty; // Clear the text
-        }
-
-        /// <summary>
-        /// Handles the behavior when the search box loses focus.
-        /// </summary>
-        public static void HandleSearchBoxLostFocus(TextBox searchBox)
-        {
-            if (searchBox == null) return;
-
-            if (string.IsNullOrWhiteSpace(searchBox.Text))
-            {
-                searchBox.Text = "Search"; // Restore watermark text
-            }
-        }
-
-        /// <summary>
-        /// Clears the search box text.
-        /// </summary>
-        public static void ClearSearchBox(TextBox searchBox)
-        {
-            if (searchBox == null) return;
-
-            searchBox.Text = string.Empty;
-        }
-
-        /// <summary>
-        /// Handles text changes in the search box and filters the DWG nodes.
-        /// </summary>
-        public static void HandleSearchBoxTextChanged(TextBox searchBox, List<DWGNode> dwgNodes, Action<List<DWGNode>> updateTreeView)
-        {
-            if (searchBox == null || dwgNodes == null || updateTreeView == null) return;
-
-            string query = searchBox.Text;
-
-            // Filter DWG nodes and update the TreeView
-            var filteredNodes = FilterDWGNodes(dwgNodes, query);
-            updateTreeView(filteredNodes);
         }
     }
 

@@ -1,34 +1,40 @@
-using Autodesk.Revit.DB;
+using CAD_Manager.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using CAD_Manager.Helpers;
 
 namespace CAD_Manager.UI
 {
     public partial class ApplyToViewsWindow : Window
     {
-        private readonly Document _document;
-        private readonly View _currentView;
-        private ObservableCollection<ViewItem> _allViews;
-        private ObservableCollection<ViewItem> _filteredViews;
-        private readonly HashSet<long> _selectedViewIds = new HashSet<long>();
+        private readonly long _currentViewId;
+        private readonly string _currentViewName;
+        private readonly ViewSelectionState _selectionState;
+        private ObservableCollection<ViewDescriptor> _filteredViews;
         private bool _isRequestPending;
         private bool _isUpdatingViewList;
+        private DispatcherTimer _statusTimer;
 
         public event EventHandler<ApplyToViewsRequestedEventArgs> ApplyRequested;
 
-        public ApplyToViewsWindow(Document document, View currentView)
+        public ApplyToViewsWindow(
+            IEnumerable<ViewDescriptor> views,
+            long currentViewId,
+            string currentViewName)
         {
             InitializeComponent();
-            _document = document;
-            _currentView = currentView;
-            TitleText.Text = $"Apply “{_currentView.Name}” to Views";
+            _currentViewId = currentViewId;
+            _currentViewName = currentViewName ?? "Current View";
+            _selectionState = new ViewSelectionState(
+                (views ?? Enumerable.Empty<ViewDescriptor>())
+                    .Where(view => view != null && view.Id != currentViewId));
+            TitleText.Text = $"Apply “{_currentViewName}” to Views";
             Title = TitleText.Text;
             
             LoadViews();
@@ -53,48 +59,8 @@ namespace CAD_Manager.UI
 
         private void LoadViews()
         {
-            _allViews = new ObservableCollection<ViewItem>();
-            
-            // Collect only Floor Plan views except the current one
-            FilteredElementCollector collector = new FilteredElementCollector(_document)
-                .OfClass(typeof(View));
-
-            foreach (View view in collector)
-            {
-                // Skip the current view, templates, and non-floor-plan views
-                if (view.Id == _currentView.Id || 
-                    view.IsTemplate || 
-                    view.ViewType != ViewType.FloorPlan)
-                    continue;
-
-                _allViews.Add(new ViewItem
-                {
-                    ViewId = view.Id,
-                    Name = view.Name,
-                    ViewType = GetViewTypeName(view.ViewType)
-                });
-            }
-
-            _filteredViews = new ObservableCollection<ViewItem>(_allViews.OrderBy(v => v.Name));
+            _filteredViews = new ObservableCollection<ViewDescriptor>(_selectionState.AllViews);
             RestoreFilteredViewSelection();
-        }
-
-        private string GetViewTypeName(ViewType viewType)
-        {
-            switch (viewType)
-            {
-                case ViewType.FloorPlan: return "Floor Plan";
-                case ViewType.CeilingPlan: return "Ceiling Plan";
-                case ViewType.Elevation: return "Elevation";
-                case ViewType.ThreeD: return "3D View";
-                case ViewType.Schedule: return "Schedule";
-                case ViewType.Section: return "Section";
-                case ViewType.Detail: return "Detail";
-                case ViewType.DraftingView: return "Drafting";
-                case ViewType.AreaPlan: return "Area Plan";
-                case ViewType.EngineeringPlan: return "Engineering Plan";
-                default: return viewType.ToString();
-            }
         }
 
         private void ViewSearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -103,16 +69,10 @@ namespace CAD_Manager.UI
             
             if (string.IsNullOrWhiteSpace(searchText))
             {
-                _filteredViews = new ObservableCollection<ViewItem>(_allViews.OrderBy(v => v.Name));
+                _filteredViews = new ObservableCollection<ViewDescriptor>(_selectionState.AllViews);
             }
             else
-            {
-                _filteredViews = new ObservableCollection<ViewItem>(
-                    _allViews.Where(v => v.Name.IndexOf(
-                            searchText,
-                            StringComparison.CurrentCultureIgnoreCase) >= 0)
-                             .OrderBy(v => v.Name));
-            }
+                _filteredViews = new ObservableCollection<ViewDescriptor>(_selectionState.Filter(searchText));
 
             RestoreFilteredViewSelection();
         }
@@ -122,11 +82,11 @@ namespace CAD_Manager.UI
             if (_isUpdatingViewList)
                 return;
 
-            foreach (ViewItem addedItem in e.AddedItems.OfType<ViewItem>())
-                _selectedViewIds.Add(addedItem.ViewId.GetIdValue());
+            foreach (ViewDescriptor addedItem in e.AddedItems.OfType<ViewDescriptor>())
+                _selectionState.SetSelected(addedItem.Id, true);
 
-            foreach (ViewItem removedItem in e.RemovedItems.OfType<ViewItem>())
-                _selectedViewIds.Remove(removedItem.ViewId.GetIdValue());
+            foreach (ViewDescriptor removedItem in e.RemovedItems.OfType<ViewDescriptor>())
+                _selectionState.SetSelected(removedItem.Id, false);
 
             UpdateSelectionSummary();
         }
@@ -136,10 +96,7 @@ namespace CAD_Manager.UI
             if (_isRequestPending)
                 return;
 
-            List<ElementId> selectedViewIds = _allViews
-                .Where(viewItem => _selectedViewIds.Contains(viewItem.ViewId.GetIdValue()))
-                .Select(viewItem => viewItem.ViewId)
-                .ToList();
+            List<long> selectedViewIds = _selectionState.SelectedIds.OrderBy(id => id).ToList();
 
             if (selectedViewIds.Count == 0)
                 return;
@@ -147,8 +104,7 @@ namespace CAD_Manager.UI
             ApplyRequested?.Invoke(
                 this,
                 new ApplyToViewsRequestedEventArgs(
-                    _document,
-                    _currentView.Id,
+                    _currentViewId,
                     selectedViewIds));
         }
 
@@ -163,8 +119,13 @@ namespace CAD_Manager.UI
             Keyboard.Focus(ViewSearchBox);
         }
 
-        public void SetRequestState(bool isPending, string message, bool isError = false)
+        public void SetRequestState(
+            bool isPending,
+            string message,
+            bool isError = false,
+            bool autoDismiss = false)
         {
+            StopStatusTimer();
             _isRequestPending = isPending;
             ResultStatusBorder.Visibility = string.IsNullOrWhiteSpace(message)
                 ? System.Windows.Visibility.Collapsed
@@ -173,11 +134,25 @@ namespace CAD_Manager.UI
                 ? $"Error: {message}"
                 : message;
             string brushKey = isError ? "ErrorBrush" : "ForegroundBrush";
-            ResultStatusText.Foreground = (System.Windows.Media.Brush)(TryFindResource(brushKey)
-                ?? System.Windows.Media.Brushes.Black);
-            ResultStatusDismissButton.Visibility = !isPending && !string.IsNullOrWhiteSpace(message)
+            if (TryFindResource(brushKey) != null)
+                ResultStatusText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+            else
+                ResultStatusText.Foreground = SystemColors.WindowTextBrush;
+            System.Windows.Automation.AutomationProperties.SetLiveSetting(
+                ResultStatusText,
+                isError
+                    ? System.Windows.Automation.AutomationLiveSetting.Assertive
+                    : System.Windows.Automation.AutomationLiveSetting.Polite);
+            ResultStatusDismissButton.Visibility = isError && !isPending && !string.IsNullOrWhiteSpace(message)
                 ? System.Windows.Visibility.Visible
                 : System.Windows.Visibility.Collapsed;
+
+            if (autoDismiss && !isPending && !isError && !string.IsNullOrWhiteSpace(message))
+            {
+                _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+                _statusTimer.Tick += StatusTimer_Tick;
+                _statusTimer.Start();
+            }
 
             UpdateSelectionSummary();
         }
@@ -185,14 +160,42 @@ namespace CAD_Manager.UI
         private void ResultStatusDismissButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_isRequestPending)
-                ResultStatusBorder.Visibility = System.Windows.Visibility.Collapsed;
+                HideStatus();
+        }
+
+        private void StatusTimer_Tick(object sender, EventArgs e)
+        {
+            HideStatus();
+        }
+
+        private void HideStatus()
+        {
+            StopStatusTimer();
+            ResultStatusBorder.Visibility = System.Windows.Visibility.Collapsed;
+            ResultStatusDismissButton.Visibility = System.Windows.Visibility.Collapsed;
+        }
+
+        private void StopStatusTimer()
+        {
+            if (_statusTimer == null)
+                return;
+
+            _statusTimer.Stop();
+            _statusTimer.Tick -= StatusTimer_Tick;
+            _statusTimer = null;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            StopStatusTimer();
+            ViewsDataGrid.SelectionChanged -= ViewsDataGrid_SelectionChanged;
+            base.OnClosed(e);
         }
 
         private void UpdateSelectionSummary()
         {
-            int count = _selectedViewIds.Count;
-            int visibleSelectedCount = _filteredViews?.Count(viewItem =>
-                _selectedViewIds.Contains(viewItem.ViewId.GetIdValue())) ?? 0;
+            int count = _selectionState.SelectedIds.Count;
+            int visibleSelectedCount = _selectionState.CountSelectedVisible(_filteredViews);
 
             SelectionSummaryText.Text = count == 0
                 ? "No views selected"
@@ -217,9 +220,9 @@ namespace CAD_Manager.UI
             {
                 ViewsDataGrid.ItemsSource = _filteredViews;
                 ViewsDataGrid.SelectedItems.Clear();
-                foreach (ViewItem viewItem in _filteredViews)
+                foreach (ViewDescriptor viewItem in _filteredViews)
                 {
-                    if (_selectedViewIds.Contains(viewItem.ViewId.GetIdValue()))
+                    if (_selectionState.IsSelected(viewItem.Id))
                         ViewsDataGrid.SelectedItems.Add(viewItem);
                 }
             }
@@ -241,33 +244,17 @@ namespace CAD_Manager.UI
         }
     }
 
-    public class ViewItem : INotifyPropertyChanged
-    {
-        public ElementId ViewId { get; set; }
-        public string Name { get; set; }
-        public string ViewType { get; set; }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
     public sealed class ApplyToViewsRequestedEventArgs : EventArgs
     {
         public ApplyToViewsRequestedEventArgs(
-            Document document,
-            ElementId sourceViewId,
-            IReadOnlyList<ElementId> targetViewIds)
+            long sourceViewId,
+            IReadOnlyList<long> targetViewIds)
         {
-            Document = document;
             SourceViewId = sourceViewId;
             TargetViewIds = targetViewIds;
         }
 
-        public Document Document { get; }
-        public ElementId SourceViewId { get; }
-        public IReadOnlyList<ElementId> TargetViewIds { get; }
+        public long SourceViewId { get; }
+        public IReadOnlyList<long> TargetViewIds { get; }
     }
 }
