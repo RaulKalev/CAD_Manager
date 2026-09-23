@@ -50,20 +50,15 @@
 		</PackageReference>
 	</ItemGroup>
 
+	<!-- Revit API reference assemblies; Revit supplies the real DLLs at runtime, so exclude them from output/Costura. -->
 	<ItemGroup>
-		<Reference Include="AdWindows">
-		  <HintPath>E:\Autodesk\Revit 2024\AdWindows.dll</HintPath>
-		  <Private>False</Private>
-		</Reference>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2024.3.60" ExcludeAssets="runtime" PrivateAssets="all" />
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2024.3.60" ExcludeAssets="runtime" PrivateAssets="all" />
+		<PackageReference Include="Nice3point.Revit.Api.AdWindows" Version="2024.3.60" ExcludeAssets="runtime" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Reference Include="Microsoft.CSharp" />
-		<Reference Include="RevitAPI">
-		  <HintPath>E:\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
-		  <Private>False</Private>
-		</Reference>
-		<Reference Include="RevitAPIUI">
-		  <HintPath>E:\Autodesk\Revit 2024\RevitAPIUI.dll</HintPath>
-		  <Private>False</Private>
-		</Reference>
 		<Reference Include="System.Windows.Forms" />
 	</ItemGroup>
 

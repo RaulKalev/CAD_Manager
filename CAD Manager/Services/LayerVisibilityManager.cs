@@ -278,7 +278,15 @@ namespace CAD_Manager.Services
 
         public bool IsUsingCustomProjectSaveFolder()
         {
-            return !string.IsNullOrWhiteSpace(_locationStore.Get(GetProjectKey()));
+            try
+            {
+                return !string.IsNullOrWhiteSpace(_locationStore.Get(GetProjectKey()));
+            }
+            catch
+            {
+                // Settings must still open when the project location cannot be resolved.
+                return false;
+            }
         }
 
         public int GetSavedPresetCount()
@@ -317,8 +325,22 @@ namespace CAD_Manager.Services
                 path = _document.PathName;
 
             return !string.IsNullOrWhiteSpace(path)
-                ? Path.GetFullPath(path).ToUpperInvariant()
+                ? NormalizeProjectPath(path).ToUpperInvariant()
                 : (_document.Title ?? "UnknownProject").Trim().ToUpperInvariant();
+        }
+
+        // Cloud models (BIM 360 / Autodesk Docs) report paths like "Autodesk Docs://Project/Model.rvt",
+        // which Path.GetFullPath rejects. Use those paths verbatim as the key.
+        private static string NormalizeProjectPath(string path)
+        {
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch (Exception ex) when (ex is NotSupportedException || ex is ArgumentException || ex is PathTooLongException)
+            {
+                return path.Trim();
+            }
         }
 
         private static PresetLayerState CreatePresetLayerState(
