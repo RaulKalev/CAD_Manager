@@ -25,6 +25,17 @@ namespace CAD_Manager
             // Several RK Tools add-ins share this tab and panel. AppLoader can
             // also restart an add-in without restarting Revit, so both must be
             // selected when they already exist rather than created unconditionally.
+            // CreateOrSelectPanel does not create a missing tab, so ensure it exists
+            // for when this add-in loads before (or without) the other RK Tools.
+            try
+            {
+                application.CreateRibbonTab(RibbonTabName);
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+                // Tab already exists
+            }
+
             ribbonPanel = application.CreateOrSelectPanel(RibbonTabName, RibbonPanelName);
 
             ribbonButton = ribbonPanel.GetItems()
