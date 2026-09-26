@@ -14,12 +14,19 @@ namespace CAD_Manager.UI
 {
     public partial class LayerSelectionFiltersWindow : Window
     {
+        private readonly Func<IReadOnlyList<DwgLayerVisibility>> _activeViewLayers;
+
         public LayerSelectionFiltersWindow(
             ThemeManager themeManager,
-            IEnumerable<LayerSelectionFilterRule> rules)
+            IEnumerable<LayerSelectionFilterRule> rules,
+            Func<IReadOnlyList<DwgLayerVisibility>> activeViewLayers = null)
         {
             InitializeComponent();
             themeManager?.LoadTheme(this);
+
+            _activeViewLayers = activeViewLayers;
+            if (_activeViewLayers == null)
+                ImportFromViewButton.Visibility = System.Windows.Visibility.Collapsed;
 
             MatchTypes = Enum.GetValues(typeof(LayerNameMatchType))
                 .Cast<LayerNameMatchType>()
@@ -71,6 +78,65 @@ namespace CAD_Manager.UI
             }), DispatcherPriority.Input);
         }
 
+        private void ImportFromViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            RulesDataGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            RulesDataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            IReadOnlyList<DwgLayerVisibility> layers;
+            try
+            {
+                layers = _activeViewLayers();
+            }
+            catch (Exception ex)
+            {
+                ShowStatus($"Hidden layers could not be read: {ex.Message}", true);
+                return;
+            }
+
+            if (layers == null || !layers.Any(dwg => dwg.HiddenLayers.Count > 0))
+            {
+                ShowStatus("No DWG layers are hidden in the active view.", false);
+                return;
+            }
+
+            IReadOnlyList<LayerSelectionFilterRule> proposals =
+                LayerFilterRuleSuggester.Suggest(layers, Rules);
+            if (proposals.Count == 0)
+            {
+                ShowStatus("Every hidden layer already matches a rule in this list.", false);
+                return;
+            }
+
+            // Drop the blank starter row so proposals are not mixed with an empty rule.
+            foreach (LayerSelectionFilterRule blankRule in Rules
+                         .Where(rule => string.IsNullOrWhiteSpace(rule.Pattern))
+                         .ToList())
+            {
+                Rules.Remove(blankRule);
+            }
+
+            foreach (LayerSelectionFilterRule proposal in proposals)
+                Rules.Add(proposal);
+
+            RulesDataGrid.SelectedItem = proposals[0];
+            RulesDataGrid.ScrollIntoView(proposals[0]);
+
+            string noun = proposals.Count == 1 ? "rule" : "rules";
+            ShowStatus(
+                $"Added {proposals.Count} proposed {noun}. Review them, then choose Save filters.",
+                false);
+        }
+
+        private void ShowStatus(string message, bool isError)
+        {
+            StatusText.Text = message;
+            StatusText.SetResourceReference(
+                TextBlock.ForegroundProperty,
+                isError ? "ErrorBrush" : "SecondaryForegroundBrush");
+            StatusText.Visibility = System.Windows.Visibility.Visible;
+        }
+
         private void RemoveRuleButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.DataContext is LayerSelectionFilterRule rule)
@@ -94,8 +160,7 @@ namespace CAD_Manager.UI
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Filters could not be saved: {ex.Message}";
-                StatusText.Visibility = System.Windows.Visibility.Visible;
+                ShowStatus($"Filters could not be saved: {ex.Message}", true);
             }
         }
 

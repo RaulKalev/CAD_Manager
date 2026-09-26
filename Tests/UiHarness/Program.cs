@@ -300,7 +300,17 @@ namespace CAD_Manager.UiHarness
                 loadedRules[1].Pattern == "A-",
                 "Layer filter definitions persist with their operators and enabled state");
 
-            LayerSelectionFiltersWindow window = new LayerSelectionFiltersWindow(null, initialRules)
+            List<DwgLayerVisibility> activeViewLayers = new List<DwgLayerVisibility>
+            {
+                new DwgLayerVisibility(
+                    "Electrical.dwg",
+                    new[] { "ACME_E-LIGHT", "ACME_E-POWER" },
+                    new[] { "ACME_A-WALL", "ACME_A-DOOR" })
+            };
+            LayerSelectionFiltersWindow window = new LayerSelectionFiltersWindow(
+                null,
+                initialRules,
+                () => activeViewLayers)
             {
                 ShowActivated = false,
                 WindowStartupLocation = WindowStartupLocation.Manual,
@@ -316,6 +326,7 @@ namespace CAD_Manager.UiHarness
 
             DataGrid rulesGrid = Find<DataGrid>(window, "RulesDataGrid");
             Button addRule = Find<Button>(window, "AddRuleButton");
+            Button importHidden = Find<Button>(window, "ImportFromViewButton");
             Button cancelFilters = Find<Button>(window, "CancelFiltersButton");
             Button saveFilters = Find<Button>(window, "SaveFiltersButton");
 
@@ -323,6 +334,7 @@ namespace CAD_Manager.UiHarness
             Check(window.IsVisible, "Layer filter editor is modeless in the harness");
             Check(
                 Math.Abs(addRule.ActualHeight - cancelFilters.ActualHeight) < 0.1 &&
+                Math.Abs(importHidden.ActualHeight - cancelFilters.ActualHeight) < 0.1 &&
                 Math.Abs(cancelFilters.ActualHeight - saveFilters.ActualHeight) < 0.1,
                 "Layer filter footer actions share one aligned height");
             CheckBox enabledCheckBox = FindVisualDescendant<CheckBox>(rulesGrid);
@@ -378,16 +390,41 @@ namespace CAD_Manager.UiHarness
             Pump();
             Capture(window, "layer_selection_filters", "light");
 
+            Click(importHidden);
+            Pump();
+            List<string> importedPatterns = rulesGrid.Items
+                .Cast<LayerSelectionFilterRule>()
+                .Skip(2)
+                .Select(rule => rule.Pattern)
+                .ToList();
+            Check(
+                importedPatterns.SequenceEqual(new[] { "E-LIGHT", "E-POWER" }),
+                "Import hidden proposes reusable rules without the company prefix; actual=" +
+                string.Join(", ", importedPatterns));
+            Check(
+                rulesGrid.Items.Cast<LayerSelectionFilterRule>().Skip(2).All(rule =>
+                    rule.IsEnabled && rule.MatchType == LayerNameMatchType.Contains),
+                "Imported proposals are enabled Contains rules");
+            Capture(window, "layer_selection_filters_imported", "light");
+
+            Click(importHidden);
+            Pump();
+            Check(rulesGrid.Items.Count == 4, "Repeating Import hidden does not duplicate rules; actual=" + rulesGrid.Items.Count);
+            TextBlock filterStatus = Find<TextBlock>(window, "StatusText");
+            Check(
+                filterStatus.Visibility == Visibility.Visible && filterStatus.Text.Contains("already matches"),
+                "Repeated import explains that nothing new was added; text=" + filterStatus.Text);
+
             Click(addRule);
             Pump();
-            Check(rulesGrid.Items.Count == 3, "Add rule appends an editable filter row");
+            Check(rulesGrid.Items.Count == 5, "Add rule appends an editable filter row");
 
-            LayerSelectionFilterRule addedRule = rulesGrid.Items[2] as LayerSelectionFilterRule;
+            LayerSelectionFilterRule addedRule = rulesGrid.Items[4] as LayerSelectionFilterRule;
             addedRule.Pattern = "-DEMO";
             addedRule.MatchType = LayerNameMatchType.EndsWith;
             Click(saveFilters);
             Pump();
-            Check(savedRules != null && savedRules.Count == 3, "Save emits all non-empty filter rules");
+            Check(savedRules != null && savedRules.Count == 5, "Save emits all non-empty filter rules");
 
             theme.Dispose();
             Pump();

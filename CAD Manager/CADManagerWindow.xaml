@@ -524,7 +524,9 @@
                                                    VerticalAlignment="Center"
                                                    Foreground="{DynamicResource ForegroundBrush}"
                                                    Text="{Binding Name}"
-                                                   TextTrimming="CharacterEllipsis" />
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Name}"
+                                                   ToolTipOpening="NameText_ToolTipOpening" />
                                         <ToggleButton Grid.Column="2"
                                                       VerticalAlignment="Center"
                                                       AutomationProperties.HelpText="Changes all selected DWGs when this row is selected."
@@ -607,7 +609,9 @@
                                                    AutomationProperties.LiveSetting="Polite"
                                                    Foreground="{DynamicResource ForegroundBrush}"
                                                    Text="{Binding Name}"
-                                                   TextTrimming="CharacterEllipsis" />
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Name}"
+                                                   ToolTipOpening="NameText_ToolTipOpening" />
                                         <Button Grid.Column="2"
                                                 VerticalAlignment="Center"
                                                 Style="{StaticResource TreeGraphicsButtonStyle}"

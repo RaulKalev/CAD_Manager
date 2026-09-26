@@ -45,6 +45,7 @@ namespace CAD_Manager
         private readonly ExternalEvent _lineGraphicsReadEvent;
         private readonly ThemeManager _themeManager;
         private readonly LayerSelectionFilterStore _layerSelectionFilterStore;
+        private readonly TreeAutoWidthController _treeAutoWidth;
         private IReadOnlyList<LayerSelectionFilterRule> _layerSelectionFilters;
         private ApplyToViewsWindow _applyToViewsWindow;
         private LineGraphicsWindow _lineGraphicsWindow;
@@ -145,6 +146,7 @@ namespace CAD_Manager
                 ApplyPresetStateToUi);
 
             DWGTreeView.ItemsSource = FilteredDWGNodes;
+            _treeAutoWidth = new TreeAutoWidthController(this, DWGTreeView, () => FilteredDWGNodes);
             DWGTreeView.PreviewMouseLeftButtonDown += TreeView_PreviewMouseLeftButtonDown;
             this.AddHandler(Keyboard.PreviewKeyDownEvent, new KeyEventHandler(Window_PreviewKeyDown), true);
 
@@ -180,6 +182,18 @@ namespace CAD_Manager
                 _windowSource.AddHook(WindowHwndHook);
 
             ComponentDispatcher.ThreadPreprocessMessage += ComponentDispatcher_ThreadPreprocessMessage;
+
+            // Size before the first render so the window does not visibly jump.
+            _treeViewControls.ExpandAllNodes(DWGNodes);
+            _treeAutoWidth.Attach(_windowSource);
+            _treeAutoWidth.FitToNames();
+        }
+
+        private void NameText_ToolTipOpening(object sender, ToolTipEventArgs e)
+        {
+            // Full names are only needed when the screen-width cap trims them.
+            if (!TreeAutoWidthController.IsTextTrimmed(sender as TextBlock))
+                e.Handled = true;
         }
 
         private void ComponentDispatcher_ThreadPreprocessMessage(ref MSG message, ref bool handled)
@@ -369,6 +383,7 @@ namespace CAD_Manager
             }
 
             ComponentDispatcher.ThreadPreprocessMessage -= ComponentDispatcher_ThreadPreprocessMessage;
+            _treeAutoWidth.Dispose();
 
             _themeManager.SaveThemeState();
 
@@ -410,12 +425,30 @@ namespace CAD_Manager
         {
             _layerSelectionFiltersWindow = _windowCoordinator.ShowOrActivate(
                 "layer-selection-filters",
-                () => new LayerSelectionFiltersWindow(_themeManager, _layerSelectionFilters),
+                () => new LayerSelectionFiltersWindow(
+                    _themeManager,
+                    _layerSelectionFilters,
+                    GetActiveViewLayerVisibility),
                 window =>
                 {
                     window.FiltersSaved += LayerSelectionFiltersWindow_FiltersSaved;
                     window.Closed += LayerSelectionFiltersWindow_Closed;
                 });
+        }
+
+        /// <summary>
+        /// Reads layer visibility from the unfiltered tree, which mirrors the
+        /// active view after each refresh.
+        /// </summary>
+        private IReadOnlyList<DwgLayerVisibility> GetActiveViewLayerVisibility()
+        {
+            return (DWGNodes ?? new List<DWGNode>())
+                .Where(dwgNode => dwgNode?.Layers != null)
+                .Select(dwgNode => new DwgLayerVisibility(
+                    dwgNode.Name,
+                    dwgNode.Layers.Where(layer => !layer.IsChecked).Select(layer => layer.Name),
+                    dwgNode.Layers.Where(layer => layer.IsChecked).Select(layer => layer.Name)))
+                .ToList();
         }
 
         private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -926,6 +959,7 @@ namespace CAD_Manager
             _treeViewControls.RefreshTreeView(DWGTreeView, FilteredDWGNodes);
             BuildLayerParentLookup();
             UpdateContextSummary();
+            _treeAutoWidth?.ScheduleFit();
         }
 
         public void ReplaceDWGNodes(List<DWGNode> updatedNodes)

@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="Layer Selection Filters"
-        Width="560"
+        Width="600"
         Height="410"
-        MinWidth="500"
+        MinWidth="580"
         MinHeight="340"
         AllowsTransparency="False"
         Background="{DynamicResource SurfaceBrush}"
@@ -207,6 +207,8 @@
             <Grid Grid.Row="5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="8" />
@@ -229,8 +231,27 @@
                         <TextBlock VerticalAlignment="Center" Text="Add rule" />
                     </StackPanel>
                 </Button>
-                <Button x:Name="CancelFiltersButton"
+                <Button x:Name="ImportFromViewButton"
                         Grid.Column="2"
+                        Height="32"
+                        MinWidth="104"
+                        VerticalAlignment="Center"
+                        Style="{DynamicResource CadButtonStyle}"
+                        AutomationProperties.Name="Import rules from layers hidden in the active view"
+                        AutomationProperties.HelpText="Adds editable rule proposals for hidden DWG layers. Model visibility is not changed."
+                        Click="ImportFromViewButton_Click"
+                        ToolTip="Propose rules for the DWG layers hidden in the active view">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Width="16"
+                                                 Height="16"
+                                                 Margin="0,0,6,0"
+                                                 Foreground="{DynamicResource IconForegroundBrush}"
+                                                 Kind="EyeOffOutline" />
+                        <TextBlock VerticalAlignment="Center" Text="Import hidden" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CancelFiltersButton"
+                        Grid.Column="4"
                         Height="32"
                         MinWidth="88"
                         VerticalAlignment="Center"
@@ -239,7 +260,7 @@
                         Click="CloseButton_Click"
                         Content="Cancel" />
                 <Button x:Name="SaveFiltersButton"
-                        Grid.Column="4"
+                        Grid.Column="6"
                         Height="32"
                         MinWidth="112"
                         VerticalAlignment="Center"

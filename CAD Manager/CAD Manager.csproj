@@ -28,6 +28,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\CAD Manager.Core\Dialogs.cs" Link="Core\Dialogs.cs" />
+		<Compile Include="..\CAD Manager.Core\LayerFilterRuleSuggester.cs" Link="Core\LayerFilterRuleSuggester.cs" />
 		<Compile Include="..\CAD Manager.Core\LayerSelectionFilters.cs" Link="Core\LayerSelectionFilters.cs" />
 		<Compile Include="..\CAD Manager.Core\OperationStatusState.cs" Link="Core\OperationStatusState.cs" />
 		<Compile Include="..\CAD Manager.Core\SelectionController.cs" Link="Core\SelectionController.cs" />

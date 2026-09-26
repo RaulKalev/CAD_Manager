@@ -50,6 +50,20 @@ Run this checklist in Revit 2024 and Revit 2026 before merging UI workflow chang
 - Load a saved preset and switch views before Revit consumes it; confirm no write occurs and the persistent error explains that the active view changed.
 - Load a saved preset normally; confirm visibility, halftone, pattern, color, and weight are applied as one Revit undo item.
 
+## Layer selection filter import
+
+- Hide some DWG layers in the active view, open Layer Selection Filters, and choose Import hidden; confirm proposals appear only for hidden layers and that model visibility does not change.
+- With layer names that share a company or project prefix (for example `ACME_P1234_E-LIGHT`), confirm the proposals drop the shared prefix and that Apply Filters does not select visible layers.
+- Choose Import hidden again; confirm no duplicate rows are added and existing rules are unchanged.
+- Rename, disable, or remove a proposal, then Save filters; confirm only the edited list is stored.
+
+## Main window auto-width
+
+- Open CAD Manager with short DWG/layer names; confirm the window keeps its minimum or restored width.
+- Open it on a view whose DWGs have long layer names; confirm the window widens so names and row buttons fit, without clipping.
+- Use very long names on a small display; confirm the window stops at the monitor work area, stays on screen, and trimmed names show the full text in a tooltip.
+- Resize the window by hand, then Refresh or switch views; confirm the window no longer changes width during that session.
+
 ## Display checks
 
 - Repeat at 100%, 150%, and 200% Windows display scaling.

@@ -38,6 +38,7 @@ The current script checks:
 - Apply to Views startup, empty selection, multi-selection, filtering, hidden selection persistence, empty results, fake-host request payload, completion status, long names, and light/dark rendering.
 - Line Graphics mixed/no-override display values, staged edits, automatic color selection, Apply, Clear Overrides, persistent errors, and light/dark rendering.
 - Modeless notification layout and light/dark rendering.
+- Layer Selection Filters editing, Import hidden proposals from a fake active view, repeated imports without duplicates, and Save.
 - Screenshot creation itself.
 
 To add a UI scenario, extend `Program.cs` with a method that opens a production window, attaches `FakeHost`, uses `Find`, `Click`, and `Pump`, records assertions through `Check`, captures the important state, and always closes/disposes the window.
